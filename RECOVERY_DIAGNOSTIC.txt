@@ -1,6 +1,9 @@
 exit_code=1
-timestamp=2026-07-28T15:34:37Z
+timestamp=2026-07-28T15:36:04Z
 ---
+runtime bundle inventory (2): part_00.b64:16000, part_01.b64:12000
+Runtime bundle assembled: 21000 bytes, SHA-256 e0e97ae7118caefcf53b4c86618d6ef53813ea5cb061d57e65a954b29960121e
+Runtime bundle is incomplete or out of order: expected da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae, got e0e97ae7118caefcf53b4c86618d6ef53813ea5cb061d57e65a954b29960121e
 Historical HTTPS source unavailable or invalid: HTTP Error 404: Not Found
 Falling back to versioned repository source chunks
 source bundle inventory (15): part_00.b64:16000, part_01.b64:16000, part_02.b64:16000, part_03.b64:16000, part_04.b64:16000, tail4_000.b64:4000, tail4_001.b64:4000, tail4_002.b64:4000, tail4_003.b64:4000, tail4_004.b64:4000, part_05.b64:12000, part_06.b64:16000, part_07.b64:16000, part_08.b64:16000, part_09.b64:16000
