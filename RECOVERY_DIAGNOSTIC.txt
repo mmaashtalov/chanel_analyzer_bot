@@ -1,11 +1,12 @@
 exit_code=1
-timestamp=2026-07-28T15:26:52Z
+timestamp=2026-07-28T15:34:32Z
 ---
 Historical HTTPS source unavailable or invalid: HTTP Error 404: Not Found
-Falling back to versioned repository chunks
-Repository chunks assembled: 15 files, 132000 bytes, SHA-256 384b768088caf4634fdb4cb51785fe5d9d5ceec4bcbc00c16ecf41c193be892b
+Falling back to versioned repository source chunks
+source bundle inventory (15): part_00.b64:16000, part_01.b64:16000, part_02.b64:16000, part_03.b64:16000, part_04.b64:16000, tail4_000.b64:4000, tail4_001.b64:4000, tail4_002.b64:4000, tail4_003.b64:4000, tail4_004.b64:4000, part_05.b64:12000, part_06.b64:16000, part_07.b64:16000, part_08.b64:16000, part_09.b64:16000
+Source chunks assembled: 132000 bytes, SHA-256 384b768088caf4634fdb4cb51785fe5d9d5ceec4bcbc00c16ecf41c193be892b
 Traceback (most recent call last):
-  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 153, in obtain_historical_archive
+  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 193, in obtain_historical_archive
     with urllib.request.urlopen(request, timeout=90) as response, archive.open("wb") as output:
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/urllib/request.py", line 215, in urlopen
@@ -30,13 +31,13 @@ urllib.error.HTTPError: HTTP Error 404: Not Found
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 261, in <module>
+  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 302, in <module>
     main()
-  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 203, in main
-    recovery_mode, accepted_sha, preferred_root = obtain_historical_archive(
-                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 164, in obtain_historical_archive
-    restore_from_repository_chunks(archive, expected)
-  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 110, in restore_from_repository_chunks
+  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 243, in main
+    result = obtain_historical_archive(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 204, in obtain_historical_archive
+    restore_from_repository_source_chunks(archive, expected)
+  File "/home/runner/work/chanel_analyzer_bot/chanel_analyzer_bot/scripts/recover_source_overlay.py", line 150, in restore_from_repository_source_chunks
     raise RuntimeError(
-RuntimeError: Repository chunk SHA-256 mismatch: expected f16e9892dd07750e2fb4f76559a06bf58bee9612b8ff2446595511ac00da5644, got 384b768088caf4634fdb4cb51785fe5d9d5ceec4bcbc00c16ecf41c193be892b
+RuntimeError: Repository source chunk SHA-256 mismatch: expected f16e9892dd07750e2fb4f76559a06bf58bee9612b8ff2446595511ac00da5644, got 384b768088caf4634fdb4cb51785fe5d9d5ceec4bcbc00c16ecf41c193be892b
