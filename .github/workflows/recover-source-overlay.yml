@@ -86,7 +86,7 @@ jobs:
             echo "exit_code=${code}"
             echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "---"
-            tail -n 40 recovery-output.log
+            cat recovery-output.log
           } > RECOVERY_DIAGNOSTIC.txt
           echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
           exit 0
