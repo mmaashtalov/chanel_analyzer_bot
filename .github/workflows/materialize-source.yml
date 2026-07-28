@@ -1,0 +1,31 @@
+name: Materialize source tree
+
+on:
+  push:
+    paths:
+      - "release/source_v023/manifest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct and verify source archive
+        run: |
+          set -euo pipefail
+          python scripts/materialize_source.py
+      - name: Commit materialized source tree
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Materialize v0.23.0 product source" || exit 0
+          git push
