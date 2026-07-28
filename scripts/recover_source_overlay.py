@@ -2,9 +2,10 @@
 """Recover verified product source while preserving newer productization files.
 
 Recovery order:
-1. A GitHub Release archive already downloaded and verified by the workflow.
-2. The historical HTTPS source archive from the manifest.
-3. Versioned repository chunks for diagnostics and disaster recovery.
+1. A GitHub Release archive downloaded and verified by the workflow.
+2. The versioned runtime bundle stored in ``release/chunks``.
+3. The historical HTTPS source archive from the manifest.
+4. Incomplete source chunks, used only for diagnostics/disaster recovery.
 
 Every accepted archive is checked by SHA-256 before extraction.
 """
@@ -24,7 +25,10 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE_DIR = ROOT / "release" / "source_v023"
+RUNTIME_BUNDLE_DIR = ROOT / "release" / "chunks"
 MANIFEST = BUNDLE_DIR / "direct_manifest.json"
+RUNTIME_EXPECTED_SHA256 = "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
+RUNTIME_ARCHIVE_ROOT = "telegram_osint_platform"
 
 PRESERVE_TOP_LEVEL = {
     ".git",
@@ -55,7 +59,7 @@ def digest_file(path: Path) -> str:
 
 def safe_extract(archive: Path, destination: Path) -> None:
     base = destination.resolve()
-    with tarfile.open(archive, "r:xz") as source:
+    with tarfile.open(archive, "r:*") as source:
         for member in source.getmembers():
             target = (base / member.name).resolve()
             if target != base and base not in target.parents:
@@ -79,6 +83,48 @@ def copy_missing_tree(source: Path, destination: Path) -> None:
             shutil.copy2(item, target)
 
 
+def decode_chunk_set(paths: list[Path], label: str) -> bytes:
+    if not paths:
+        raise RuntimeError(f"No {label} chunks found")
+    print(
+        f"{label} inventory ({len(paths)}): "
+        + ", ".join(f"{path.name}:{path.stat().st_size}" for path in paths),
+        flush=True,
+    )
+    encoded = "".join(path.read_text(encoding="ascii").strip() for path in paths)
+    try:
+        return base64.b64decode(encoded, validate=True)
+    except ValueError as exc:
+        raise RuntimeError(f"{label} chunks contain invalid base64") from exc
+
+
+def use_runtime_bundle(archive: Path) -> tuple[str, str, str] | None:
+    paths = sorted(RUNTIME_BUNDLE_DIR.glob("*.b64"))
+    if not paths:
+        print("No repository runtime bundle chunks found", flush=True)
+        return None
+    try:
+        raw = decode_chunk_set(paths, "runtime bundle")
+    except RuntimeError as exc:
+        print(str(exc), flush=True)
+        return None
+
+    actual = digest_bytes(raw)
+    print(
+        f"Runtime bundle assembled: {len(raw)} bytes, SHA-256 {actual}",
+        flush=True,
+    )
+    if actual != RUNTIME_EXPECTED_SHA256:
+        print(
+            "Runtime bundle is incomplete or out of order: "
+            f"expected {RUNTIME_EXPECTED_SHA256}, got {actual}",
+            flush=True,
+        )
+        return None
+    archive.write_bytes(raw)
+    return "verified-repository-runtime-bundle", actual, RUNTIME_ARCHIVE_ROOT
+
+
 def repository_chunk_paths() -> list[Path]:
     chunks: list[Path] = []
     for index in range(10):
@@ -88,27 +134,21 @@ def repository_chunk_paths() -> list[Path]:
     return chunks
 
 
-def restore_from_repository_chunks(archive: Path, expected: str) -> None:
+def restore_from_repository_source_chunks(archive: Path, expected: str) -> None:
     chunks = repository_chunk_paths()
     missing = [str(path.relative_to(ROOT)) for path in chunks if not path.is_file()]
     if missing:
         raise RuntimeError(f"Repository source chunks are missing: {missing}")
 
-    encoded = "".join(path.read_text(encoding="ascii").strip() for path in chunks)
-    try:
-        raw = base64.b64decode(encoded, validate=True)
-    except ValueError as exc:
-        raise RuntimeError("Repository source chunks contain invalid base64") from exc
-
+    raw = decode_chunk_set(chunks, "source bundle")
     actual = digest_bytes(raw)
     print(
-        f"Repository chunks assembled: {len(chunks)} files, "
-        f"{len(raw)} bytes, SHA-256 {actual}",
+        f"Source chunks assembled: {len(raw)} bytes, SHA-256 {actual}",
         flush=True,
     )
     if actual != expected:
         raise RuntimeError(
-            f"Repository chunk SHA-256 mismatch: expected {expected}, got {actual}"
+            f"Repository source chunk SHA-256 mismatch: expected {expected}, got {actual}"
         )
     archive.write_bytes(raw)
 
@@ -160,9 +200,9 @@ def obtain_historical_archive(
         return "verified-https", expected, archive_root
     except (OSError, urllib.error.URLError, RuntimeError) as exc:
         print(f"Historical HTTPS source unavailable or invalid: {exc}", flush=True)
-        print("Falling back to versioned repository chunks", flush=True)
-        restore_from_repository_chunks(archive, expected)
-        return "verified-repository-chunks", expected, archive_root
+        print("Falling back to versioned repository source chunks", flush=True)
+        restore_from_repository_source_chunks(archive, expected)
+        return "verified-repository-source-chunks", expected, archive_root
 
 
 def locate_source_root(extracted: Path, preferred_root: str) -> Path:
@@ -194,18 +234,19 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="product-source-recovery-") as temp_name:
         temp = Path(temp_name)
-        archive = temp / "source.tar.xz"
+        archive = temp / "product-archive"
 
-        release_result = use_workflow_release(archive)
-        if release_result is not None:
-            recovery_mode, accepted_sha, preferred_root = release_result
-        else:
-            recovery_mode, accepted_sha, preferred_root = obtain_historical_archive(
+        result = use_workflow_release(archive)
+        if result is None:
+            result = use_runtime_bundle(archive)
+        if result is None:
+            result = obtain_historical_archive(
                 archive,
                 url,
                 manifest_expected,
                 manifest_root,
             )
+        recovery_mode, accepted_sha, preferred_root = result
 
         extracted = temp / "extracted"
         extracted.mkdir()
