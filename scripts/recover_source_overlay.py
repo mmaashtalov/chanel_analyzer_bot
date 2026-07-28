@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Recover the verified product source without deleting newer productization files.
+"""Recover verified product source while preserving newer productization files.
 
-The preferred source is the HTTPS archive declared in the manifest. Because
-temporary release hosts can expire, the repository also contains an ordered
-base64 transport copy. Both paths are verified against the same SHA-256 before
-anything is extracted or copied.
+Recovery order:
+1. A GitHub Release archive already downloaded and verified by the workflow.
+2. The historical HTTPS source archive from the manifest.
+3. Versioned repository chunks for diagnostics and disaster recovery.
+
+Every accepted archive is checked by SHA-256 before extraction.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import tarfile
@@ -77,11 +80,6 @@ def copy_missing_tree(source: Path, destination: Path) -> None:
 
 
 def repository_chunk_paths() -> list[Path]:
-    """Return transport chunks in byte order.
-
-    ``part_04`` exceeded a previous transport limit and therefore has five
-    continuation files which belong immediately after it.
-    """
     chunks: list[Path] = []
     for index in range(10):
         chunks.append(BUNDLE_DIR / f"part_{index:02d}.b64")
@@ -115,7 +113,38 @@ def restore_from_repository_chunks(archive: Path, expected: str) -> None:
     archive.write_bytes(raw)
 
 
-def obtain_archive(archive: Path, url: str, expected: str) -> str:
+def use_workflow_release(archive: Path) -> tuple[str, str, str] | None:
+    source_value = os.getenv("RECOVERY_ARCHIVE_PATH", "").strip()
+    expected = os.getenv("RECOVERY_ARCHIVE_SHA256", "").strip().lower()
+    archive_root = os.getenv("RECOVERY_ARCHIVE_ROOT", "").strip()
+    if not source_value:
+        return None
+
+    source = Path(source_value)
+    if not source.is_file():
+        raise RuntimeError(f"Workflow release archive does not exist: {source}")
+    if len(expected) != 64 or not archive_root:
+        raise RuntimeError("Workflow release metadata is incomplete")
+
+    actual = digest_file(source)
+    if actual != expected:
+        raise RuntimeError(
+            f"GitHub Release SHA-256 mismatch: expected {expected}, got {actual}"
+        )
+    shutil.copy2(source, archive)
+    print(
+        f"Using verified GitHub Release archive: {source.name}, SHA-256 {actual}",
+        flush=True,
+    )
+    return "verified-github-release", expected, archive_root
+
+
+def obtain_historical_archive(
+    archive: Path,
+    url: str,
+    expected: str,
+    archive_root: str,
+) -> tuple[str, str, str]:
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "channel-analyzer-productization/0.24"},
@@ -128,32 +157,61 @@ def obtain_archive(archive: Path, url: str, expected: str) -> str:
             raise RuntimeError(
                 f"Downloaded source SHA-256 mismatch: expected {expected}, got {actual}"
             )
-        return "verified-https"
+        return "verified-https", expected, archive_root
     except (OSError, urllib.error.URLError, RuntimeError) as exc:
-        print(f"HTTPS source unavailable or invalid: {exc}", flush=True)
+        print(f"Historical HTTPS source unavailable or invalid: {exc}", flush=True)
         print("Falling back to versioned repository chunks", flush=True)
         restore_from_repository_chunks(archive, expected)
-        return "verified-repository-chunks"
+        return "verified-repository-chunks", expected, archive_root
+
+
+def locate_source_root(extracted: Path, preferred_root: str) -> Path:
+    direct = extracted / preferred_root
+    if direct.is_dir():
+        return direct
+
+    candidates = [
+        path.parent
+        for path in extracted.rglob("pyproject.toml")
+        if (path.parent / "app" / "setup" / "server.py").is_file()
+    ]
+    if len(candidates) == 1:
+        return candidates[0]
+    raise RuntimeError(
+        f"Cannot uniquely locate product root; preferred={preferred_root!r}, "
+        f"candidates={[str(path) for path in candidates]}"
+    )
 
 
 def main() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     url = str(manifest["url"])
-    expected = str(manifest["sha256"]).lower()
-    archive_root = str(manifest["root"])
+    manifest_expected = str(manifest["sha256"]).lower()
+    manifest_root = str(manifest["root"])
 
-    if not url.startswith("https://") or len(expected) != 64:
+    if not url.startswith("https://") or len(manifest_expected) != 64:
         raise RuntimeError("Invalid source manifest")
 
     with tempfile.TemporaryDirectory(prefix="product-source-recovery-") as temp_name:
         temp = Path(temp_name)
         archive = temp / "source.tar.xz"
-        recovery_mode = obtain_archive(archive, url, expected)
+
+        release_result = use_workflow_release(archive)
+        if release_result is not None:
+            recovery_mode, accepted_sha, preferred_root = release_result
+        else:
+            recovery_mode, accepted_sha, preferred_root = obtain_historical_archive(
+                archive,
+                url,
+                manifest_expected,
+                manifest_root,
+            )
 
         extracted = temp / "extracted"
         extracted.mkdir()
         safe_extract(archive, extracted)
-        source_root = extracted / archive_root
+        source_root = locate_source_root(extracted, preferred_root)
+
         if not (source_root / "pyproject.toml").is_file():
             raise RuntimeError("Recovered archive has no pyproject.toml")
         if not (source_root / "app" / "setup" / "server.py").is_file():
@@ -184,7 +242,7 @@ def main() -> None:
         json.dumps(
             {
                 "version": manifest["version"],
-                "archive_sha256": expected,
+                "archive_sha256": accepted_sha,
                 "mode": recovery_mode,
             },
             ensure_ascii=False,
@@ -194,7 +252,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print(
-        f"Recovered source {manifest['version']} ({expected}) via {recovery_mode}",
+        f"Recovered source via {recovery_mode}; SHA-256 {accepted_sha}",
         flush=True,
     )
 
