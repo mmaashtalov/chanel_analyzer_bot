@@ -1,0 +1,37 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-osint}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-osint}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      APP_MODE: setup
+      PORT: 8080
+      PRODUCT_CONFIG_DIR: /data/config
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-osint}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${CONTROL_CENTER_PORT:-8080}:8080"
+    volumes:
+      - reports:/data/reports
+      - product_config:/data/config
+
+volumes:
+  postgres_data:
+  reports:
+  product_config:
