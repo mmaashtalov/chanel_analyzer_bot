@@ -1,0 +1,51 @@
+name: Materialize verified product source
+
+on:
+  push:
+    paths:
+      - release/source_v023/direct_manifest.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-product-source
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download, verify and materialize source
+        run: python scripts/materialize_source_from_url.py
+
+      - name: Verify materialized tree
+        run: |
+          test -f pyproject.toml
+          test -f app/setup/server.py
+          test -f .github/workflows/ci.yml
+          python -m compileall -q app
+
+      - name: Commit materialized source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "Materialize v0.23.0 product source"
+          git push origin HEAD:main
