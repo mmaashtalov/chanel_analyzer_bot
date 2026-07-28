@@ -1,0 +1,54 @@
+name: Recover verified product source
+
+on:
+  push:
+    paths:
+      - .github/workflows/recover-source-overlay.yml
+      - scripts/recover_source_overlay.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recover-product-source-overlay
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download, verify and overlay source
+        run: python scripts/recover_source_overlay.py
+
+      - name: Validate recovered product tree
+        run: |
+          test -f pyproject.toml
+          test -f app/entrypoint.py
+          test -f app/setup/server.py
+          python -m compileall -q app
+
+      - name: Commit recovered source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Source tree is already present"
+            exit 0
+          fi
+          git commit -m "Recover verified product source for productization"
+          git push origin HEAD:main
