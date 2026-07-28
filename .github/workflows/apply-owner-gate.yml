@@ -1,0 +1,114 @@
+name: Apply production owner gate
+
+on:
+  push:
+    paths:
+      - app/setup/secure_proxy.py
+      - .github/workflows/apply-owner-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-production-owner-gate
+  cancel-in-progress: false
+
+jobs:
+  patch-production-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install YAML parser
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Patch Render blueprint and README
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          render_path = Path("render.yaml")
+          data = yaml.safe_load(render_path.read_text(encoding="utf-8")) or {}
+          services = data.get("services") or []
+          web_services = [service for service in services if service.get("type") == "web"]
+          if not web_services:
+              raise SystemExit("render.yaml does not define a web service")
+          service = web_services[0]
+          service["dockerCommand"] = "python -m app.setup.secure_proxy"
+          service["healthCheckPath"] = "/health"
+          service["autoDeploy"] = True
+
+          env_vars = service.setdefault("envVars", [])
+          by_key = {
+              entry.get("key"): entry
+              for entry in env_vars
+              if isinstance(entry, dict) and entry.get("key")
+          }
+
+          def upsert(key: str, **values: object) -> None:
+              entry = by_key.get(key)
+              if entry is None:
+                  entry = {"key": key}
+                  env_vars.append(entry)
+                  by_key[key] = entry
+              entry.clear()
+              entry["key"] = key
+              entry.update(values)
+
+          upsert("OWNER_GATE_USERNAME", value="owner")
+          upsert("OWNER_GATE_PASSWORD", sync=False)
+          upsert("UPSTREAM_PORT", value="8766")
+          upsert("CONTROL_CENTER_UPSTREAM_CMD", value="python -m app.setup.server")
+          upsert("OWNER_GATE_MAX_BODY_BYTES", value="2097152")
+
+          render_path.write_text(
+              yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+              encoding="utf-8",
+          )
+
+          readme_path = Path("README.md")
+          readme = readme_path.read_text(encoding="utf-8")
+          marker = "<!-- production-owner-gate -->"
+          if marker not in readme:
+              block = '''\n\n<!-- production-owner-gate -->\n## Запуск с телефона\n\n[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mmaashtalov/chanel_analyzer_bot)\n\n1. Нажмите **Deploy to Render** и задайте `OWNER_GATE_PASSWORD`.\n2. После развёртывания откройте адрес сервиса. Логин внешнего owner-gate: `owner`, пароль — заданный при deploy.\n3. В Control Center создайте внутреннего администратора, введите Telegram-ключи и параметры источников, запустите проверки и нажмите **Запустить продукт**.\n4. Публичный эмулятор работает без ключей: https://mmaashtalov.github.io/chanel_analyzer_bot/\n\n`/health`, `/ready` и `/emulator` доступны публично. Control Center и управляющие API защищены внешним owner-gate и внутренней сессией администратора.\n'''
+              readme_path.write_text(readme.rstrip() + block + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate patched blueprint
+        shell: bash
+        run: |
+          python - <<'PY'
+          import yaml
+          data = yaml.safe_load(open("render.yaml", encoding="utf-8"))
+          service = next(item for item in data["services"] if item["type"] == "web")
+          assert service["dockerCommand"] == "python -m app.setup.secure_proxy"
+          env = {item["key"]: item for item in service["envVars"]}
+          assert env["OWNER_GATE_USERNAME"]["value"] == "owner"
+          assert env["OWNER_GATE_PASSWORD"]["sync"] is False
+          assert service["healthCheckPath"] == "/health"
+          PY
+
+      - name: Commit production configuration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add render.yaml README.md
+          if git diff --cached --quiet; then
+            echo "Production configuration already applied"
+            exit 0
+          fi
+          git commit -m "Secure production Control Center deployment"
+          git push origin HEAD:main
