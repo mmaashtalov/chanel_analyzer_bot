@@ -5,11 +5,7 @@ on:
     paths:
       - .github/workflows/recover-source-overlay.yml
       - scripts/recover_source_overlay.py
-  pull_request:
-    paths:
-      - .github/workflows/recover-source-overlay.yml
-      - scripts/recover_source_overlay.py
-      - release/source_v023/direct_manifest.json
+      - release/chanel_analyzer_bot_product_v0_22_0.tar.gz
   workflow_dispatch:
 
 permissions:
@@ -35,43 +31,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Locate and verify GitHub Release archive
+      - name: Locate and verify repository release archive
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          rm -rf .recovery-release
-          mkdir -p .recovery-release
-          gh release download v0.23.1 \
-            --pattern 'chanel_analyzer_bot-0.23.1.tar.xz' \
-            --pattern 'SHA256SUMS' \
-            --dir .recovery-release
-          code=$?
-          if [ "$code" -ne 0 ]; then
-            echo "GitHub Release v0.23.1 is unavailable; recovery script will try historical sources"
-            exit 0
-          fi
-
-          archive="$PWD/.recovery-release/chanel_analyzer_bot-0.23.1.tar.xz"
-          sums="$PWD/.recovery-release/SHA256SUMS"
-          if [ ! -s "$archive" ] || [ ! -s "$sums" ]; then
-            echo "Downloaded release is incomplete"
-            exit 0
-          fi
-
-          expected=$(awk '$2 ~ /chanel_analyzer_bot-0.23.1.tar.xz$/ {print $1; exit}' "$sums")
+          set -euo pipefail
+          archive="$PWD/release/chanel_analyzer_bot_product_v0_22_0.tar.gz"
+          expected="da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
+          test -s "$archive"
           actual=$(sha256sum "$archive" | awk '{print $1}')
-          if [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
-            echo "GitHub Release checksum verification failed"
-            echo "expected=${expected:-missing} actual=${actual}"
-            exit 0
-          fi
-
-          echo "Verified GitHub Release archive: ${actual}"
-          echo "RECOVERY_ARCHIVE_PATH=$archive" >> "$GITHUB_ENV"
-          echo "RECOVERY_ARCHIVE_SHA256=$actual" >> "$GITHUB_ENV"
-          echo "RECOVERY_ARCHIVE_ROOT=chanel_analyzer_bot-0.23.1" >> "$GITHUB_ENV"
+          test "$actual" = "$expected"
+          echo "Verified repository release archive: $actual"
 
       - name: Recover verified source and capture diagnostic
         id: source_recovery
@@ -106,7 +75,7 @@ jobs:
           TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
-          rm -rf .recovery-release recovery-output.log
+          rm -f recovery-output.log
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A

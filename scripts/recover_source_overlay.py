@@ -16,14 +16,18 @@ import base64
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import tarfile
 import tempfile
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+LOCAL_ARCHIVE = ROOT / "release" / "chanel_analyzer_bot_product_v0_22_0.tar.gz"
+LOCAL_EXPECTED_SHA256 = "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
+LOCAL_ARCHIVE_ROOT = "telegram_osint_platform"
+LOCAL_VERSION = "0.22.0-product"
 BUNDLE_DIR = ROOT / "release" / "source_v023"
 RUNTIME_BUNDLE_DIR = ROOT / "release" / "chunks"
 MANIFEST = BUNDLE_DIR / "direct_manifest.json"
@@ -39,10 +43,12 @@ PRESERVE_TOP_LEVEL = {
     "docker-compose.yml",
     "emulator",
     "render.yaml",
+    "release",
     "scripts",
     "start-product.bat",
     "start-product.sh",
 }
+PRESERVE_FILES = {Path("app/setup/secure_proxy.py")}
 
 
 def digest_bytes(value: bytes) -> str:
@@ -68,7 +74,7 @@ def safe_extract(archive: Path, destination: Path) -> None:
                 link = (target.parent / member.linkname).resolve()
                 if link != base and base not in link.parents:
                     raise RuntimeError(f"Unsafe archive link: {member.name}")
-        source.extractall(base)
+        source.extractall(base, filter="data")
 
 
 def copy_missing_tree(source: Path, destination: Path) -> None:
@@ -79,6 +85,24 @@ def copy_missing_tree(source: Path, destination: Path) -> None:
         if item.is_dir():
             target.mkdir(parents=True, exist_ok=True)
         elif not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, target)
+
+
+def overlay_tree(
+    source: Path,
+    destination: Path,
+    source_root: Path,
+    protected: set[Path],
+) -> None:
+    """Overlay source files without deleting newer productization files."""
+    destination.mkdir(parents=True, exist_ok=True)
+    for item in source.iterdir():
+        relative = item.relative_to(source_root)
+        target = destination / item.name
+        if item.is_dir():
+            overlay_tree(item, target, source_root, protected)
+        elif relative not in protected:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
 
@@ -179,6 +203,25 @@ def use_workflow_release(archive: Path) -> tuple[str, str, str] | None:
     return "verified-github-release", expected, archive_root
 
 
+def use_repository_archive(archive: Path) -> tuple[str, str, str] | None:
+    if not LOCAL_ARCHIVE.is_file():
+        print(f"Repository release archive is absent: {LOCAL_ARCHIVE}", flush=True)
+        return None
+
+    actual = digest_file(LOCAL_ARCHIVE)
+    if actual != LOCAL_EXPECTED_SHA256:
+        raise RuntimeError(
+            "Repository release archive SHA-256 mismatch: "
+            f"expected {LOCAL_EXPECTED_SHA256}, got {actual}"
+        )
+    shutil.copy2(LOCAL_ARCHIVE, archive)
+    print(
+        f"Using verified repository release archive: {LOCAL_ARCHIVE.name}, SHA-256 {actual}",
+        flush=True,
+    )
+    return "verified-repository-archive", actual, LOCAL_ARCHIVE_ROOT
+
+
 def obtain_historical_archive(
     archive: Path,
     url: str,
@@ -238,6 +281,8 @@ def main() -> None:
 
         result = use_workflow_release(archive)
         if result is None:
+            result = use_repository_archive(archive)
+        if result is None:
             result = use_runtime_bundle(archive)
         if result is None:
             result = obtain_historical_archive(
@@ -263,9 +308,7 @@ def main() -> None:
                 continue
             target = ROOT / item.name
             if item.is_dir():
-                if target.exists():
-                    shutil.rmtree(target)
-                shutil.copytree(item, target, symlinks=True)
+                overlay_tree(item, target, source_root, PRESERVE_FILES)
             else:
                 shutil.copy2(item, target)
 
@@ -282,7 +325,7 @@ def main() -> None:
     marker.write_text(
         json.dumps(
             {
-                "version": manifest["version"],
+                "version": LOCAL_VERSION if recovery_mode == "verified-repository-archive" else manifest["version"],
                 "archive_sha256": accepted_sha,
                 "mode": recovery_mode,
             },
