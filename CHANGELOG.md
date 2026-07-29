@@ -1,5 +1,15 @@
 # Changelog
 
+## Sprint 23 — Mobile Operations (unreleased)
+
+- Control Center получил phone-first путь `Deploy → Setup → Migrations → Start → Analyze`.
+- Operation state, PID, последняя ошибка, миграция и lifecycle operation journal сохраняются на постоянном volume.
+- Добавлены статическая проверка credentials, `/api/diagnostics`, `/api/errors` и redacted log tail.
+- Добавлены JSON backup/restore с SHA-256 integrity и безопасная подготовка redeploy.
+- Конфигурация и журналы больше не возвращают Telegram secrets и пароль PostgreSQL.
+- Добавлена мобильная Control Center-панель с lifecycle, диагностикой и восстановлением.
+- Реальный Telegram RPC, PostgreSQL production и redeploy внешнего хостинга в этом спринте не выполнялись.
+
 ## Sprint 22 — Unified Evidence-First Analyze (unreleased)
 
 - `/analyze` теперь строит единый пакет `UnifiedDocument → claims → evidence → provenance` из одного снимка Telegram.

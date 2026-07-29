@@ -1,16 +1,27 @@
-# Chanel Analyzer Bot — Product Release
+# Chanel Analyzer Bot — Product Release 0.23.0
 
 Готовая Telegram-first OSINT / Intelligence платформа с Control Center и встроенным эмулятором.
 
-## Запуск владельцем
+## Запуск владельцем с телефона
 
 ### Windows
 
+1. Выполните Deploy в Render по кнопке ниже либо один раз запустите Docker Compose на выбранном хосте.
+2. Откройте публичный URL Control Center со смартфона.
+3. Введите owner-gate пароль, проверьте Telegram credentials и сохраните конфигурацию.
+4. Нажмите «Применить миграции», затем «Запустить продукт».
+5. Откройте Telegram-бота и выполните `/analyze @channel`.
+
+После Deploy для ежедневной эксплуатации не требуются SSH, локальный Docker или ПК.
+
+### Локальный Docker-вариант
+
+Для локального запуска:
+
 1. Установите Docker Desktop.
 2. Распакуйте архив продукта.
-3. Дважды нажмите `start-product.bat`.
-4. Дождитесь автоматического открытия Control Center.
-5. Создайте администратора и введите Telegram/API-ключи.
+3. Дважды нажмите `start-product.bat` либо запустите `./start-product.sh`.
+4. Откройте Control Center на смартфоне в локальной сети.
 
 ### Linux / macOS
 
@@ -35,7 +46,7 @@ docker compose up -d --build
 
 После запуска откройте `http://localhost:8080`. Telegram Bot Token, API ID, API Hash и Telethon String Session вводятся в Control Center. Эмулятор работает сразу и не требует ключей.
 
-## Автоматический bootstrap
+## Автоматический bootstrap и Mobile Operations
 
 Контейнер приложения перед стартом автоматически:
 
@@ -50,13 +61,23 @@ docker compose up -d --build
 
 `.env.example` содержит только параметры развёртывания. Реальные Telegram и AI-секреты не следует записывать в репозиторий: они вводятся через мастер Control Center.
 
+Control Center сохраняет operation state в постоянном `/data` volume. Поэтому после рестарта хостинга владелец видит фактический статус коллектора, последнюю миграцию, последнюю ошибку и историю операций.
+
+Доступны owner-защищённые операции:
+
+- `/api/credentials/check` — статическая проверка обязательных полей без Telegram RPC;
+- `/api/migrate`, `/api/start`, `/api/stop`, `/api/restart` — lifecycle;
+- `/api/diagnostics` и `/api/errors` — диагностика и redacted log tail;
+- `/api/backup` и `/api/restore` — JSON backup с SHA-256;
+- `/api/update/prepare` — backup и безопасная остановка перед redeploy.
+
 ## Формат репозитория
 
-Проверенный продукт хранится в `release/chanel_analyzer_bot_product_v0_22_0.tar.gz`. Dockerfile автоматически распаковывает его при сборке.
+Проверенный продукт хранится в `release/chanel_analyzer_bot_product_v0_23_0.tar.gz`. Dockerfile собирает текущее дерево репозитория напрямую.
 
-SHA-256 релиза: `da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae`.
+SHA-256 релиза фиксируется в `MANIFEST.json` после воспроизводимой сборки архива.
 
-Версия: `0.22.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
+Версия: `0.23.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
 
 <!-- production-owner-gate -->
 ## Запуск с телефона

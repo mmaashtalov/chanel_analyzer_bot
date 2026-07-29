@@ -11,7 +11,6 @@ import base64
 import hmac
 import http.client
 import os
-from pathlib import Path
 import shlex
 import signal
 import subprocess
@@ -19,6 +18,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Final
 from urllib.parse import urlsplit
 
@@ -92,7 +92,7 @@ def filtered_headers(headers: object, *, request: bool) -> list[tuple[str, str]]
 
 class SecureProxyHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    server_version = "ChannelAnalyzerOwnerGate/0.22.0"
+    server_version = "ChannelAnalyzerOwnerGate/0.23.0"
 
     upstream_host = "127.0.0.1"
     upstream_port = 8766
@@ -100,25 +100,25 @@ class SecureProxyHandler(BaseHTTPRequestHandler):
     gate_password = ""
     max_body_bytes = 2 * 1024 * 1024
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         self._handle()
 
-    def do_HEAD(self) -> None:  # noqa: N802
+    def do_HEAD(self) -> None:
         self._handle()
 
-    def do_POST(self) -> None:  # noqa: N802
+    def do_POST(self) -> None:
         self._handle()
 
-    def do_PUT(self) -> None:  # noqa: N802
+    def do_PUT(self) -> None:
         self._handle()
 
-    def do_PATCH(self) -> None:  # noqa: N802
+    def do_PATCH(self) -> None:
         self._handle()
 
-    def do_DELETE(self) -> None:  # noqa: N802
+    def do_DELETE(self) -> None:
         self._handle()
 
-    def do_OPTIONS(self) -> None:  # noqa: N802
+    def do_OPTIONS(self) -> None:
         self._handle()
 
     def _handle(self) -> None:
@@ -129,15 +129,15 @@ class SecureProxyHandler(BaseHTTPRequestHandler):
         if not public and not valid_basic_auth(
             self.headers.get("Authorization"), self.gate_username, self.gate_password
         ):
-            body = b"Owner authentication required\n"
+            auth_body = b"Owner authentication required\n"
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="Channel Analyzer Owner"')
             self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Content-Length", str(len(auth_body)))
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             if self.command != "HEAD":
-                self.wfile.write(body)
+                self.wfile.write(auth_body)
             return
 
         transfer_encoding = self.headers.get("Transfer-Encoding", "").lower()
@@ -152,7 +152,7 @@ class SecureProxyHandler(BaseHTTPRequestHandler):
         if content_length < 0 or content_length > self.max_body_bytes:
             self._plain_response(413, "Request body is too large")
             return
-        body = self.rfile.read(content_length) if content_length else None
+        body: bytes | None = self.rfile.read(content_length) if content_length else None
 
         connection = http.client.HTTPConnection(
             self.upstream_host, self.upstream_port, timeout=120
@@ -225,7 +225,7 @@ def main() -> None:
     child_env["CONTROL_CENTER_PORT"] = str(upstream_port)
     child_env["CONTROL_CENTER_HOST"] = "127.0.0.1"
 
-    upstream = subprocess.Popen(upstream_command, env=child_env)  # noqa: S603
+    upstream = subprocess.Popen(upstream_command, env=child_env)
     stop_event = threading.Event()
 
     def stop(_signum: int, _frame: object) -> None:

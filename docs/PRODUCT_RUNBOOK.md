@@ -1,15 +1,16 @@
-# Product Runbook 0.22.0
+# Product Runbook 0.23.0 — Mobile Operations
 
 ## Сценарий владельца
 
-1. Запустить `docker compose up -d --build`.
-2. Открыть Control Center на порту 8080.
-3. Сначала открыть вкладку «Эмулятор» и пройти демонстрационный сценарий.
-4. В «Настройка» ввести Telegram credentials и String Session.
-5. Сохранить конфигурацию.
-6. Нажать «Применить миграции».
-7. Нажать «Запустить».
-8. Проверить статус `running` и открыть Telegram-бота.
+1. Выполнить Deploy в Render или запустить `docker compose up -d --build` на хосте.
+2. Открыть Control Center со смартфона.
+3. Проверить формат Bot Token, API ID, API Hash, String Session и PostgreSQL URL.
+4. Сохранить конфигурацию.
+5. Нажать «Применить миграции» и дождаться `applied`.
+6. Нажать «Запустить продукт» и дождаться `running`.
+7. Открыть Telegram-бота и выполнить `/analyze @channel`.
+
+В рабочем режиме SSH и локальный Docker не нужны. После рестарта хостинга Control Center восстанавливает operation state из `/data/config/operation-state.json` и перепроверяет PID коллектора.
 
 ## Диагностика
 
@@ -18,6 +19,8 @@
 - Миграция не проходит: проверить PostgreSQL URL и пароль.
 - Бот сразу остановился: открыть события Control Center и `docker compose logs app`.
 - Эмулятор не готов: открыть `/api/self-test`.
+- Статус `error`: открыть «Диагностика», затем `/api/errors`; секреты в ответе должны отсутствовать.
+- Обновление: сначала нажать «Подготовить безопасное обновление», скачать backup и только затем выполнить Redeploy.
 
 ## Backup
 
@@ -25,4 +28,4 @@
 docker compose exec db pg_dump -U postgres osint > backup.sql
 ```
 
-Конфигурация находится в Docker volume `product_config`; резервное копирование volume необходимо выполнять средствами Docker/хостинга.
+Конфигурация находится в Docker volume `product_config` или `/data` на Render. Для прикладного backup используйте кнопку «Скачать backup»: файл содержит секреты и должен храниться как пароль. После восстановления обязательно повторно примените миграции.

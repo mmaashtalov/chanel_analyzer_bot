@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
-DEMO_VERSION = "0.22.0-demo"
+DEMO_VERSION = "0.23.0-demo"
 REQUIRED_ASSETS = (
     "provenance.json", "provenance.pdf", "verification.json", "verification.pdf",
     "acquisition_request.json", "external_acquisition.json",
@@ -80,7 +80,7 @@ def build_summary() -> dict:
 
     return {
         "product": "Telegram Intelligence Platform",
-        "release": "Public demo for product v0.22.0",
+        "release": "Public demo for product v0.23.0",
         "generated_at": datetime.now(UTC).isoformat(),
         "workspace": {
             "id": report.get("workspace_id", "demo-workspace"),

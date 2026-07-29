@@ -12,8 +12,8 @@ from generate_manifest import build_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_REPOSITORY = "mmaashtalov/chanel_analyzer_bot"
-EXPECTED_ARCHIVE_HASH = "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
-EXPECTED_PACKAGE_VERSION = "0.22.0"
+EXPECTED_ARCHIVE_HASH = "83aa8d290c1793b549e686b72588054c2a7b2e1e2e4d2ccd226df2032e319368"
+EXPECTED_PACKAGE_VERSION = "0.23.0"
 REQUIRED_FILES = (
     ".dockerignore",
     ".gitignore",
@@ -25,7 +25,7 @@ REQUIRED_FILES = (
     ".github/workflows/pages.yml",
     "app/entrypoint.py",
     "app/setup/secure_proxy.py",
-    "release/chanel_analyzer_bot_product_v0_22_0.tar.gz",
+    "release/chanel_analyzer_bot_product_v0_23_0.tar.gz",
 )
 REMOVED_WORKFLOWS = (
     ".github/workflows/apply-owner-gate.yml",
@@ -98,8 +98,8 @@ def _check_generated_files_are_untracked() -> None:
 
 def _check_version_surfaces() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    if 'version = "0.22.0"' not in pyproject:
-        _fail("pyproject.toml does not declare package version 0.22.0")
+    if 'version = "0.23.0"' not in pyproject:
+        _fail("pyproject.toml does not declare package version 0.23.0")
     for relative in STALE_SURFACES:
         text = (ROOT / relative).read_text(encoding="utf-8")
         for stale in ("0.23.1", "94/94", "88/88", "pytest: 88"):
@@ -113,14 +113,14 @@ def _check_manifest() -> None:
     if actual != expected:
         _fail("MANIFEST.json is not reproducible from the current tree")
     if actual["package_version"] != EXPECTED_PACKAGE_VERSION:
-        _fail("MANIFEST.json package version is not 0.22.0")
+        _fail("MANIFEST.json package version is not 0.23.0")
 
 
 def _check_runtime_layout() -> None:
     for relative in REQUIRED_FILES:
         if not (ROOT / relative).is_file():
             _fail(f"Required file is missing: {relative}")
-    archive = ROOT / "release/chanel_analyzer_bot_product_v0_22_0.tar.gz"
+    archive = ROOT / "release/chanel_analyzer_bot_product_v0_23_0.tar.gz"
     if _archive_hash(archive) != EXPECTED_ARCHIVE_HASH:
         _fail("Canonical archive SHA-256 mismatch")
     for relative in REMOVED_WORKFLOWS:

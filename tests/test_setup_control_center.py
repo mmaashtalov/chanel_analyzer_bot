@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pytest
 
@@ -29,6 +28,8 @@ def test_validate_and_mask_config():
     public = server.public_config(cfg)
     assert public["telegram_bot_token_configured"] is True
     assert "ABCDEFGHIJKLMNOPQRSTUVWXYZ" not in json.dumps(public)
+    assert "local-product-password" not in json.dumps(public)
+    assert "database_url" not in public
     assert public["telegram_api_id"] == 123456
 
 
@@ -48,3 +49,56 @@ def test_config_to_env_sets_production_mode():
     assert env["APP_MODE"] == "production"
     assert env["TELEGRAM_API_ID"] == "123456"
     assert env["MONITORING_ENABLED"] == "true"
+
+
+def test_credential_check_reports_fields_without_returning_secrets(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "CONFIG_FILE", tmp_path / "settings.json")
+    monkeypatch.setattr(server, "LOG_FILE", tmp_path / "control-center.log")
+    manager = server.ProductManager()
+
+    result = manager.credential_check(valid_config())
+
+    assert result["status"] == "ok"
+    assert result["checks"]["telegram_bot_token"]["status"] == "ok"
+    serialized = json.dumps(result, ensure_ascii=False)
+    assert valid_config()["telegram_bot_token"] not in serialized
+    assert valid_config()["telegram_string_session"] not in serialized
+
+
+def test_operation_state_survives_control_center_restart(tmp_path, monkeypatch):
+    config_file = tmp_path / "settings.json"
+    log_file = tmp_path / "control-center.log"
+    monkeypatch.setattr(server, "CONFIG_FILE", config_file)
+    monkeypatch.setattr(server, "LOG_FILE", log_file)
+    first = server.ProductManager()
+    first.state.update({"status": "error", "last_error": "collector failed", "last_exit_code": 17})
+    first._persist_state()
+
+    second = server.ProductManager()
+
+    assert second.state["status"] == "error"
+    assert second.state["last_error"] == "collector failed"
+    assert second.last_exit_code == 17
+
+
+def test_backup_integrity_and_restore(tmp_path, monkeypatch):
+    config_file = tmp_path / "settings.json"
+    log_file = tmp_path / "control-center.log"
+    monkeypatch.setattr(server, "CONFIG_FILE", config_file)
+    monkeypatch.setattr(server, "LOG_FILE", log_file)
+    manager = server.ProductManager()
+    manager.save(valid_config())
+
+    content, filename, digest = manager.backup_download()
+    payload = json.loads(content)
+    assert filename.endswith(".json")
+    assert payload["integrity_sha256"] == digest
+    assert server.verify_backup(payload)["config"]["telegram_api_id"] == 123456
+
+    payload["config"]["analysis_max_posts"] = 6000
+    with pytest.raises(ValueError, match="SHA-256"):
+        server.verify_backup(payload)
+
+    restored = manager.restore(json.loads(content))
+    assert restored["status"] == "ok"
+    assert json.loads(config_file.read_text())["telegram_api_id"] == 123456

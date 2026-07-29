@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "telegram-osint-platform"
-version = "0.22.0"
+version = "0.23.0"
 description = "Telegram-first OSINT analytics and channel profiling platform"
 requires-python = ">=3.12"
 dependencies = [

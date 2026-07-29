@@ -1,15 +1,15 @@
 {
   "schema": 2,
-  "version": "0.22.0-product",
-  "package_version": "0.22.0",
+  "version": "0.23.0-product",
+  "package_version": "0.23.0",
   "canonical_archive": {
-    "path": "release/chanel_analyzer_bot_product_v0_22_0.tar.gz",
-    "size": 731210,
-    "sha256": "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
+    "path": "release/chanel_analyzer_bot_product_v0_23_0.tar.gz",
+    "size": 374919,
+    "sha256": "83aa8d290c1793b549e686b72588054c2a7b2e1e2e4d2ccd226df2032e319368"
   },
-  "tests": "111/111",
-  "test_count": 111,
-  "file_count": 224,
+  "tests": "117/117",
+  "test_count": 117,
+  "file_count": 229,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -39,8 +39,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 11027,
-      "sha256": "2c4c252a9c687cf75f275c4fdd47087f58dfbf31398aeb4652e5deb58dc6be2a"
+      "size": 12024,
+      "sha256": "10dbdb9350555f4061abc8e40bff6b5bc275bdd780925d0128cf375147a2fb92"
     },
     {
       "path": "Dockerfile",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "size": 3690,
-      "sha256": "12a079484ffa246c036c12a3a52dbdef5864fac65cc188c80bf08207a05919f4"
+      "size": 5400,
+      "sha256": "5f9921e3b4e99f1c05def6857b35e9adcd3eca6aa55ff4a34c659a9c0389a401"
     },
     {
       "path": "RECOVERY_DIAGNOSTIC.txt",
@@ -430,7 +430,7 @@
     {
       "path": "app/demo/server.py",
       "size": 18306,
-      "sha256": "d0a15afd6c74cbe8815424674042847cccdf78b955c60757a327e7aa3e895eb0"
+      "sha256": "7bd217a2c679377aa652221fd853c554d892cbf4020808358ca2c0983578816a"
     },
     {
       "path": "app/domain/__init__.py",
@@ -653,14 +653,24 @@
       "sha256": "2266c941b9234ca29604bd731dd09733eb86aa902eab06b95172be41da6e7185"
     },
     {
+      "path": "app/setup/control_center.html",
+      "size": 12868,
+      "sha256": "9079b071debc1cd6595efe970cdb39093f2b05dae6657ab26fc8dfe553acc95b"
+    },
+    {
+      "path": "app/setup/mobile.py",
+      "size": 5470,
+      "sha256": "06c925b48941f15f2e3106ac537387f5fc3242c1e67733d01a26bd663c219b76"
+    },
+    {
       "path": "app/setup/secure_proxy.py",
-      "size": 9618,
-      "sha256": "7a6ca069feb01b1c175b4715e5edb9ab000b38d107ea175fa3d487198ab7be3a"
+      "size": 9535,
+      "sha256": "d4bd82971a415968e05a8d9545f6d6e36a5389a534fe5fa1f642ee177b814784"
     },
     {
       "path": "app/setup/server.py",
-      "size": 22042,
-      "sha256": "1beb9a320eb5b48c26ab4988a80bb272c70e79adb644f5fe88bd70deeaa7ddde"
+      "size": 42236,
+      "sha256": "94c84cf8ecfcf67ddbbf805f1e2bb1878018afa7afc6f99165868a590f145770"
     },
     {
       "path": "app/similarity/__init__.py",
@@ -839,8 +849,8 @@
     },
     {
       "path": "docs/PRODUCT_RUNBOOK.md",
-      "size": 1387,
-      "sha256": "377aee8fbf0fe2f5fd582aedb0c03be9ea3e8c33995baafc18e5c6bfc721c4c9"
+      "size": 2284,
+      "sha256": "3d70fc9f1fdd0a2ba42b515c35e07029f9ebd8a00e07d15c85f347a457f16356"
     },
     {
       "path": "docs/SPRINT16_REPORT.md",
@@ -866,6 +876,11 @@
       "path": "docs/SPRINT22_REPORT.md",
       "size": 2522,
       "sha256": "2632840bf72045859fbc3c5eb411a238b413eff083eda41f1fc274722e90e6f0"
+    },
+    {
+      "path": "docs/SPRINT23_REPORT.md",
+      "size": 2535,
+      "sha256": "ca7676349f53a098a0ae1a4f81f5740fa02d032842a91821cd9d5bc6c11731b1"
     },
     {
       "path": "docs/SPRINT_17_REPORT.md",
@@ -900,12 +915,17 @@
     {
       "path": "pyproject.toml",
       "size": 887,
-      "sha256": "8e648508dcd4dcfbccf4b58f4680f5d3bfcacb10c54ede05acfbddc9bb8fb4ea"
+      "sha256": "9397995be3bd51743e702c918880d5cd75b0c1401c48b34f4cc563cb93ceefee"
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_22_0.tar.gz",
       "size": 731210,
       "sha256": "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
+    },
+    {
+      "path": "release/chanel_analyzer_bot_product_v0_23_0.tar.gz",
+      "size": 374919,
+      "sha256": "83aa8d290c1793b549e686b72588054c2a7b2e1e2e4d2ccd226df2032e319368"
     },
     {
       "path": "render.yaml",
@@ -920,7 +940,7 @@
     {
       "path": "scripts/generate_manifest.py",
       "size": 4010,
-      "sha256": "62f83926dd9f9058b42f70676779401f6799f99f72b4d595ff6e9373124a84a3"
+      "sha256": "023465c13138ed9349a8d8ba8147d39202a66819cc49921a40bff36bcef0c3b0"
     },
     {
       "path": "scripts/materialize_source.py",
@@ -940,7 +960,7 @@
     {
       "path": "scripts/project_preflight.py",
       "size": 5269,
-      "sha256": "2d48d693c6447bc674957fccc750c0ab21a614c153dec38d49e874459205fa5e"
+      "sha256": "1b0cd089b6e699b4fb95c0942f43ea500f9a2e2864f24620174230f86aab9df2"
     },
     {
       "path": "scripts/recover_source_overlay.py",
@@ -959,8 +979,8 @@
     },
     {
       "path": "telegram_intelligence_demo_standalone.html",
-      "size": 30597,
-      "sha256": "10f2021e377069e114b08c0ccfee57a94c3625eba3b3bb8cca3a564ec9be5e98"
+      "size": 30598,
+      "sha256": "9711372831cb68764a29ac16fc4ae4b43a8392447ca4bdc075bb971218a82e5b"
     },
     {
       "path": "tests/fakes.py",
@@ -1048,6 +1068,11 @@
       "sha256": "601a05091613284db924a948e0bf024e5c15a085cd415c13fcd35b6536cea2e5"
     },
     {
+      "path": "tests/test_mobile_operations.py",
+      "size": 2490,
+      "sha256": "af07b7bc36959bba9c22bfaaf7d9594ee03ce4d2bcb8c08a3d4c5df4c47fa2ba"
+    },
+    {
       "path": "tests/test_monitoring.py",
       "size": 2223,
       "sha256": "dddbfac096afa329373d7edef25da80f473bcba43dd48a0732968ceefb5cd4ee"
@@ -1094,8 +1119,8 @@
     },
     {
       "path": "tests/test_setup_control_center.py",
-      "size": 1744,
-      "sha256": "785b9fd057619818a4a19b0d76310f1d8f84ec48754c086adbebb79ec94f807d"
+      "size": 4003,
+      "sha256": "c7ef0ce4b7a5668fe25f422015c2bb85607d10a14df73dd93be85f3bdb1b0f4b"
     },
     {
       "path": "tests/test_similarity.py",
