@@ -16,7 +16,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      PRODUCT_CONFIG_DIR: ${{ runner.temp }}/channel-analyzer-config
+      PRODUCT_CONFIG_DIR: /tmp/channel-analyzer-config
     steps:
       - name: Checkout
         uses: actions/checkout@v4
