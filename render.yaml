@@ -1,31 +1,48 @@
+databases:
+  - name: chanel-analyzer-db
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: osint
+    user: channel_analyzer
+    postgresMajorVersion: "17"
+    ipAllowList: []
+
 services:
-- type: web
-  name: chanel-analyzer-bot
-  runtime: docker
-  plan: free
-  autoDeploy: true
-  healthCheckPath: /health
-  envVars:
-  - key: APP_MODE
-    value: setup
-  - key: PORT
-    value: 8080
-  - key: PRODUCT_CONFIG_DIR
-    value: /data/config
-  - key: PRODUCT_RUNTIME_DIR
-    value: /data/runtime
-  - key: OWNER_GATE_USERNAME
-    value: owner
-  - key: OWNER_GATE_PASSWORD
-    sync: false
-  - key: UPSTREAM_PORT
-    value: '8766'
-  - key: CONTROL_CENTER_UPSTREAM_CMD
-    value: python -m app.setup.server
-  - key: OWNER_GATE_MAX_BODY_BYTES
-    value: '2097152'
-  disk:
-    name: chanel-analyzer-data
-    mountPath: /data
-    sizeGB: 1
-  dockerCommand: python -m app.setup.secure_proxy
+  - type: web
+    name: chanel-analyzer-bot
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    autoDeploy: true
+    healthCheckPath: /health
+    preDeployCommand: python -m alembic upgrade head
+    envVars:
+      - key: APP_MODE
+        value: setup
+      - key: PORT
+        value: 8080
+      - key: PRODUCT_CONFIG_DIR
+        value: /data/config
+      - key: PRODUCT_RUNTIME_DIR
+        value: /data/runtime
+      - key: REPORTS_DIR
+        value: /data/reports
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chanel-analyzer-db
+          property: connectionString
+      - key: OWNER_GATE_USERNAME
+        value: owner
+      - key: OWNER_GATE_PASSWORD
+        sync: false
+      - key: UPSTREAM_PORT
+        value: "8766"
+      - key: CONTROL_CENTER_UPSTREAM_CMD
+        value: python -m app.setup.server
+      - key: OWNER_GATE_MAX_BODY_BYTES
+        value: "2097152"
+    disk:
+      name: chanel-analyzer-data
+      mountPath: /data
+      sizeGB: 1
+    dockerCommand: python -m app.setup.secure_proxy
