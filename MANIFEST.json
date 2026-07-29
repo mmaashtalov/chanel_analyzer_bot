@@ -4,12 +4,12 @@
   "package_version": "0.24.0",
   "canonical_archive": {
     "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-    "size": 383762,
-    "sha256": "ff237057db5fcc25f47de886eec80cb3801f31f41e3e4abbe18bcc447a3d01c3"
+    "size": 383156,
+    "sha256": "80f64dd1c91f4cd6d3dfd8a7a556923b6ddee5314e1921dd3a659934f1e58f3e"
   },
-  "tests": "125/125",
-  "test_count": 125,
-  "file_count": 236,
+  "tests": "128/128",
+  "test_count": 128,
+  "file_count": 238,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -24,13 +24,13 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size": 2089,
-      "sha256": "c76c5bfb53cef13c075ccdedf46f3d008a0b45009e7a4ea7e856ca5b97d36efc"
+      "size": 4552,
+      "sha256": "2f62289f6f0116df7ea2faf69739014a4036dd635f2cc9bb39a8ebe13b404a57"
     },
     {
       "path": ".github/workflows/pages.yml",
-      "size": 980,
-      "sha256": "912e55d18eb83c9bbf24aa2787f17160863eee5d161fee7be3a0611f70ef7296"
+      "size": 782,
+      "sha256": "4d363399fd93cb6ede8869860b2a3bf6d87eef8f4f491c00db8bc624e05773d8"
     },
     {
       "path": ".gitignore",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "size": 6688,
-      "sha256": "b6621f2a9f7412242fbb9d26c6d7f29870de5dc48ccfc91092934f8b0ac618ca"
+      "size": 7110,
+      "sha256": "9d860f2d7f9b101fd87359559b431d7e9ce87ed92acb16c00aac15085506f7eb"
     },
     {
       "path": "RECOVERY_DIAGNOSTIC.txt",
@@ -69,8 +69,8 @@
     },
     {
       "path": "alembic/env.py",
-      "size": 1480,
-      "sha256": "2485cfbb76bfff146a9facdaca158e2b04d580f725a8509dc29d24f1d1fab82a"
+      "size": 1718,
+      "sha256": "a942c861a7347485381a77de96d3abf7deed09fd649eae4b28288a86ae911031"
     },
     {
       "path": "alembic/versions/0001_initial.py",
@@ -349,8 +349,8 @@
     },
     {
       "path": "app/db/session.py",
-      "size": 640,
-      "sha256": "9739941962381c4a127e65f4a1fd0e7101c380414061de0dee0d89a62ed2bb71"
+      "size": 710,
+      "sha256": "04ba0619b3c2ee917cedc21e20f1aeb1cfe8e69b02fe673206a626189fa84d8e"
     },
     {
       "path": "app/db/source_collection_repository.py",
@@ -361,6 +361,11 @@
       "path": "app/db/temporal_claim_repository.py",
       "size": 19653,
       "sha256": "535816c2bcd853d09846dac7c4136050ea32ebb22a5fa250ac9bc6a48d7fd764"
+    },
+    {
+      "path": "app/db/url.py",
+      "size": 574,
+      "sha256": "70e281bd17b6625b5d370657beb2f68038e5ed04f7ad0c105a9e8900fc381739"
     },
     {
       "path": "app/db/workspace_evolution_repository.py",
@@ -859,8 +864,8 @@
     },
     {
       "path": "docs/PRODUCT_RUNBOOK.md",
-      "size": 3234,
-      "sha256": "b42e3859631c1f2e2aa8bdd45710540c2711e9b90af526444760f6c3c7e30579"
+      "size": 5699,
+      "sha256": "a3da871958ccab36a2ab0e1247f5c0b27b65385aa3a09affd800a8eddedd3e3d"
     },
     {
       "path": "docs/SPRINT16_REPORT.md",
@@ -919,8 +924,8 @@
     },
     {
       "path": "emulator/index.html",
-      "size": 14406,
-      "sha256": "611ff3cace6ea177515e79d495aba557e4abce67a0f962cea00df6d31dc2b44d"
+      "size": 802,
+      "sha256": "9f8a27c8525bd55ab9aa3deed3eb9348f19c32813553b9c0a4b13fca26485441"
     },
     {
       "path": "emulator/style.css",
@@ -944,13 +949,13 @@
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-      "size": 383762,
-      "sha256": "ff237057db5fcc25f47de886eec80cb3801f31f41e3e4abbe18bcc447a3d01c3"
+      "size": 383156,
+      "sha256": "80f64dd1c91f4cd6d3dfd8a7a556923b6ddee5314e1921dd3a659934f1e58f3e"
     },
     {
       "path": "render.yaml",
-      "size": 696,
-      "sha256": "cb8c9e09ea14c0c5268a8994347a72c516681c9f0378bfc2177ec1ad377e78ea"
+      "size": 1231,
+      "sha256": "40c40dfe1123b3e44647752086b009f299ac4d763626598eb71c5c5f6cb74b43"
     },
     {
       "path": "scripts/build_release_archive.py",
@@ -984,8 +989,8 @@
     },
     {
       "path": "scripts/project_preflight.py",
-      "size": 5269,
-      "sha256": "9495ee4b2aae9d27fe08775c7e13ac07132d16c50c35e296306272496e138280"
+      "size": 6935,
+      "sha256": "daf2af7bc73c73b6c6362c35dc2fdb9e69eb85049c3b292ac7a0d83d0bd475c5"
     },
     {
       "path": "scripts/recover_source_overlay.py",
@@ -1046,6 +1051,11 @@
       "path": "tests/test_corroboration.py",
       "size": 2002,
       "sha256": "5037da25306ed160c69d546d6fa1c29e450f9955d44cfb5669f3f58d252bb3c4"
+    },
+    {
+      "path": "tests/test_database_url.py",
+      "size": 613,
+      "sha256": "1b69ce1ef538f85b42d3c28b4b60e3b75188da370fe7436d6dc81fe956cfce81"
     },
     {
       "path": "tests/test_demo_release.py",
