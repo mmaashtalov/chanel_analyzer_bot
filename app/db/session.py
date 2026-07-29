@@ -2,10 +2,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from app.db.base import Base
+from app.db.url import normalize_database_url
 
 
 def build_engine(database_url: str) -> AsyncEngine:
-    return create_async_engine(database_url, pool_pre_ping=True)
+    return create_async_engine(normalize_database_url(database_url), pool_pre_ping=True)
 
 
 def build_session_factory(engine: AsyncEngine) -> async_sessionmaker:
