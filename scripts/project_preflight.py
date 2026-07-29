@@ -1,4 +1,4 @@
-"""Fail-fast project lock and Sprint 0 integrity checks."""
+"""Fail-fast project lock and production integrity checks."""
 
 from __future__ import annotations
 
@@ -16,13 +16,17 @@ EXPECTED_ARCHIVE_HASH = "ff237057db5fcc25f47de886eec80cb3801f31f41e3e4abbe18bcc4
 EXPECTED_PACKAGE_VERSION = "0.24.0"
 REQUIRED_FILES = (
     ".dockerignore",
+    ".env.example",
     ".gitignore",
     "Dockerfile",
     "MANIFEST.json",
     "README.md",
+    "render.yaml",
     "pyproject.toml",
     ".github/workflows/ci.yml",
     ".github/workflows/pages.yml",
+    "alembic/env.py",
+    "app/db/url.py",
     "app/entrypoint.py",
     "app/setup/secure_proxy.py",
     "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
@@ -94,6 +98,10 @@ def _check_generated_files_are_untracked() -> None:
     ]
     if generated:
         _fail("Generated files are tracked: " + ", ".join(generated[:10]))
+    forbidden = {".env", "data/config/settings.json", "operation-state.json"}
+    leaked = sorted(forbidden.intersection(tracked))
+    if leaked:
+        _fail("Secret-bearing runtime files are tracked: " + ", ".join(leaked))
 
 
 def _check_version_surfaces() -> None:
@@ -114,6 +122,40 @@ def _check_manifest() -> None:
         _fail("MANIFEST.json is not reproducible from the current tree")
     if actual["package_version"] != EXPECTED_PACKAGE_VERSION:
         _fail("MANIFEST.json package version is not 0.24.0")
+
+
+def _check_production_infrastructure() -> None:
+    render = (ROOT / "render.yaml").read_text(encoding="utf-8")
+    for marker in (
+        "plan: starter",
+        "plan: basic-256mb",
+        "region: frankfurt",
+        "fromDatabase:",
+        "property: connectionString",
+        "preDeployCommand: python -m alembic upgrade head",
+        "mountPath: /data",
+        "sync: false",
+        "python -m app.setup.secure_proxy",
+    ):
+        if marker not in render:
+            _fail(f"Render production marker is missing: {marker}")
+    if "plan: free" in render:
+        _fail("Render production blueprint must not use a Free service with persistent disk")
+
+    alembic_env = (ROOT / "alembic/env.py").read_text(encoding="utf-8")
+    if 'os.getenv("DATABASE_URL"' not in alembic_env or "normalize_database_url" not in alembic_env:
+        _fail("Alembic is not wired to the managed DATABASE_URL")
+
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    for marker in (
+        "pgvector/pgvector:pg17",
+        "python -m alembic upgrade head",
+        "Owner-gate setup smoke test without Telegram keys",
+        "actions/checkout@v6",
+        "actions/setup-python@v6",
+    ):
+        if marker not in ci:
+            _fail(f"Production CI marker is missing: {marker}")
 
 
 def _check_runtime_layout() -> None:
@@ -140,11 +182,14 @@ def main() -> int:
         _check_generated_files_are_untracked()
         _check_version_surfaces()
         _check_manifest()
+        _check_production_infrastructure()
         _check_runtime_layout()
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"PROJECT PREFLIGHT FAILED: {exc}", file=sys.stderr)
         return 1
-    print("PROJECT PREFLIGHT PASSED: repository, archive, manifest and runtime layout are consistent")
+    print(
+        "PROJECT PREFLIGHT PASSED: source, release, Render, migrations and CI are consistent"
+    )
     return 0
 
 
