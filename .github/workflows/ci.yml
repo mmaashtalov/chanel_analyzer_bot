@@ -1,10 +1,10 @@
-name: Core CI
+name: Production CI
 
 on:
   push:
     branches:
       - main
-      - productization/source-recovery
+      - agent/production-integration
   pull_request:
     branches:
       - main
@@ -17,12 +17,29 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PRODUCT_CONFIG_DIR: /tmp/channel-analyzer-config
+      PRODUCT_RUNTIME_DIR: /tmp/channel-analyzer-runtime
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/osint
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: osint
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d osint"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -34,13 +51,28 @@ jobs:
         run: python scripts/project_preflight.py
 
       - name: Compile Python sources
-        run: python -m compileall -q app scripts tests
+        run: python -m compileall -q app alembic scripts tests
 
       - name: Run regression suite
         run: python -m pytest -q
 
-      - name: Check Sprint 0 scripts
-        run: python -m ruff check scripts/generate_manifest.py scripts/project_preflight.py
+      - name: Check production integration files
+        run: >-
+          python -m ruff check
+          app/db/url.py
+          app/db/session.py
+          alembic/env.py
+          tests/test_database_url.py
+          scripts/generate_manifest.py
+          scripts/project_preflight.py
+
+      - name: Apply PostgreSQL migrations
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current | tee /tmp/alembic-current.txt
+          python -m alembic heads | tee /tmp/alembic-heads.txt
+          grep -q "0018" /tmp/alembic-current.txt
+          test "$(grep -c '(head)' /tmp/alembic-heads.txt)" -eq 1
 
       - name: Build runtime image from current tree
         run: docker build --tag chanel-analyzer-bot:ci .
@@ -67,3 +99,31 @@ jobs:
           curl --fail --silent http://127.0.0.1:18080/api/demo >/tmp/channel-analyzer-demo.json
           grep -q '"status": "ok"' /tmp/channel-analyzer-health.json
           grep -q '"status": "ok"' /tmp/channel-analyzer-ready.json
+
+      - name: Owner-gate setup smoke test without Telegram keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run --detach --rm \
+            --env PORT=8000 \
+            --env UPSTREAM_PORT=8766 \
+            --env OWNER_GATE_USERNAME=owner \
+            --env OWNER_GATE_PASSWORD=ci-owner-password \
+            --env PRODUCT_CONFIG_DIR=/tmp/product-config \
+            --env PRODUCT_RUNTIME_DIR=/tmp/product-runtime \
+            --publish 127.0.0.1:18081:8000 \
+            chanel-analyzer-bot:ci \
+            python -m app.setup.secure_proxy)"
+          cleanup() { docker rm --force "$container_id" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18081/health >/tmp/owner-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18081/)" = "401"
+          curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/ >/tmp/control-center.html
+          curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/api/status >/tmp/control-center-status.json
+          grep -q 'Telegram Intelligence Platform' /tmp/control-center.html
+          grep -q '"configured": false' /tmp/control-center-status.json
