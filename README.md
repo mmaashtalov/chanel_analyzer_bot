@@ -2,28 +2,36 @@
 
 Готовая Telegram-first OSINT / Intelligence платформа. Аналитическая работа выполняется в Telegram; Control Center остаётся только owner-контуром развёртывания и восстановления.
 
+## Статус production readiness
+
+Исходники, PostgreSQL/pgvector, Alembic, Docker, owner-gate, Control Center, backup/restore, diagnostics и recovery-контур проверяются автоматически без реальных Telegram-ключей. Bot Token, API ID/API Hash и Telethon StringSession намеренно вводятся только в последний момент через owner-защищённый Control Center.
+
+Render Blueprint создаёт платный web service с persistent disk и отдельный managed PostgreSQL в регионе Frankfurt. Бесплатные Render-инстансы не используются как production-конфигурация.
+
+Подробный порядок запуска, rollback и финальный credential gate описаны в `docs/PRODUCT_RUNBOOK.md`.
+
 ## Запуск владельцем с телефона
 
-### Windows
+### Render
 
-1. Выполните Deploy в Render по кнопке ниже либо один раз запустите Docker Compose на выбранном хосте.
-2. Откройте публичный URL Control Center со смартфона.
-3. Введите owner-gate пароль, проверьте Telegram credentials и сохраните конфигурацию.
-4. Нажмите «Применить миграции», затем «Запустить продукт».
-5. Откройте Telegram-бота и выполните `/analyze @channel`.
+1. Выполните Deploy по кнопке ниже.
+2. Задайте обязательный `OWNER_GATE_PASSWORD`; Telegram-ключи на этом этапе не нужны.
+3. Дождитесь создания managed PostgreSQL и успешной pre-deploy миграции.
+4. Откройте публичный URL Control Center со смартфона.
+5. В последний момент введите Telegram credentials, проверьте и сохраните конфигурацию.
+6. Нажмите «Применить миграции», затем «Запустить продукт».
+7. Откройте Telegram-бота и выполните `/analyze @channel`.
 
 После Deploy для ежедневной эксплуатации не требуются SSH, локальный Docker или ПК.
 
 ### Локальный Docker-вариант
-
-Для локального запуска:
 
 1. Установите Docker Desktop.
 2. Распакуйте архив продукта.
 3. Дважды нажмите `start-product.bat` либо запустите `./start-product.sh`.
 4. Откройте Control Center на смартфоне в локальной сети.
 
-### Linux / macOS
+Для Linux / macOS:
 
 ```bash
 chmod +x start-product.sh
@@ -38,7 +46,7 @@ chmod +x start-product.sh
 - проверяет `/health`;
 - открывает Control Center.
 
-Ручной технический запуск также доступен:
+Ручной технический запуск:
 
 ```bash
 docker compose up -d --build
@@ -59,7 +67,7 @@ docker compose up -d --build
 
 ## Конфигурация
 
-`.env.example` содержит только параметры развёртывания. Реальные Telegram и AI-секреты не следует записывать в репозиторий: они вводятся через мастер Control Center.
+`.env.example` содержит только параметры развёртывания. Реальные Telegram и AI-секреты нельзя записывать в репозиторий: они вводятся через мастер Control Center.
 
 Control Center сохраняет operation state в постоянном `/data` volume. Поэтому после рестарта хостинга владелец видит фактический статус коллектора, последнюю миграцию, последнюю ошибку и историю операций.
 
@@ -88,13 +96,11 @@ SHA-256 релиза фиксируется в `MANIFEST.json` после вос
 Версия: `0.24.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
 
 <!-- production-owner-gate -->
-## Запуск с телефона
+## Быстрые ссылки
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mmaashtalov/chanel_analyzer_bot)
 
-1. Нажмите **Deploy to Render** и задайте `OWNER_GATE_PASSWORD`.
-2. После развёртывания откройте адрес сервиса. Логин внешнего owner-gate: `owner`, пароль — заданный при deploy.
-3. В Control Center создайте внутреннего администратора, введите Telegram-ключи и параметры источников, запустите проверки и нажмите **Запустить продукт**.
-4. Публичный мобильный эмулятор работает без ключей: https://raw.githack.com/mmaashtalov/chanel_analyzer_bot/main/emulator/index.html
+Публичный мобильный эмулятор без ключей:
+https://raw.githack.com/mmaashtalov/chanel_analyzer_bot/main/emulator/index.html
 
 `/health`, `/ready` и `/emulator` доступны публично. Control Center и управляющие API защищены внешним owner-gate и внутренней сессией администратора.
