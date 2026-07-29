@@ -17,6 +17,8 @@ from urllib.parse import unquote, urlparse
 
 from app.demo.server import ASSET_DIR, HTML as DEMO_HTML, build_summary, run_self_test
 
+PRODUCT_VERSION = "0.22.0-product"
+
 CONFIG_DIR = Path(os.getenv("PRODUCT_CONFIG_DIR", "/data/config"))
 CONFIG_FILE = CONFIG_DIR / "settings.json"
 LOG_FILE = CONFIG_DIR / "control-center.log"
@@ -203,7 +205,7 @@ class ProductManager:
                 "config": public_config(config),
                 "events": list(reversed(self.events[-20:])),
                 "emulator_ready": run_self_test()["status"] == "ok",
-                "version": "0.22.0-product",
+                "version": PRODUCT_VERSION,
             }
 
     def save(self, candidate: dict[str, Any]) -> dict[str, Any]:
@@ -324,7 +326,7 @@ class ControlHandler(BaseHTTPRequestHandler):
         elif path == "/api/status":
             self._json(MANAGER.status())
         elif path in {"/health", "/api/health"}:
-            self._json({"status": "ok", "mode": "setup", "version": "0.22.0-product"})
+            self._json({"status": "ok", "mode": "setup", "version": PRODUCT_VERSION})
         elif path in {"/ready", "/api/ready", "/api/self-test"}:
             test = run_self_test()
             self._json(test, 200 if test["status"] == "ok" else 503)

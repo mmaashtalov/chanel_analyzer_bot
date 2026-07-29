@@ -2,12 +2,12 @@
 
 ## Version
 
-`0.21.1-demo`
+`0.22.0-demo`
 
 ## Result
 
 - Demo HTTP service works without Telegram credentials, PostgreSQL or external APIs.
-- Mobile-first analytical page exposes the Sprint 15–20 workflow.
+- Mobile-first analytical page exposes the current evidence-first workflow.
 - `/health`, `/api/demo`, JSON and PDF artifact routes were checked over HTTP.
 - Standalone HTML is included for direct opening on a smartphone.
 - Production mode remains available through `APP_MODE=production`.
@@ -15,9 +15,9 @@
 ## Verification
 
 - compileall: passed
-- pytest: 88 passed
+- pytest: the reproducible count is stored in `MANIFEST.json`
 - HTTP smoke test: passed
-- Docker configuration: included; Docker CLI was unavailable in the build environment, therefore an actual image build was not executed here.
+- Docker configuration: included; local Docker CLI is environment-dependent, so image build must be подтверждён CI.
 
 ## Public deployment
 

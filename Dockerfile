@@ -12,11 +12,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends fonts-dejavu-core ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /bundle
-COPY release/chanel_analyzer_bot_product_v0_22_0.tar.gz /bundle/product.tar.gz
-RUN mkdir -p /app \
-    && tar -xzf /bundle/product.tar.gz --strip-components=1 -C /app \
-    && rm /bundle/product.tar.gz
+COPY . /app
 
 WORKDIR /app
 RUN pip install --no-cache-dir .
@@ -30,4 +26,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=45s --retries=5 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()" || exit 1
 
-ENTRYPOINT ["/usr/local/bin/product-entrypoint"]
+CMD ["/usr/local/bin/product-entrypoint"]

@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
+DEMO_VERSION = "0.22.0-demo"
 REQUIRED_ASSETS = (
     "provenance.json", "provenance.pdf", "verification.json", "verification.pdf",
     "acquisition_request.json", "external_acquisition.json",
@@ -47,7 +48,7 @@ def run_self_test() -> dict:
     failed = [item for item in checks if item["status"] != "ok"]
     return {
         "status": "ok" if not failed else "failed",
-        "version": "0.21.2-demo",
+        "version": DEMO_VERSION,
         "checked_at": datetime.now(UTC).isoformat(),
         "checks": checks,
         "passed": len(checks) - len(failed),
@@ -79,7 +80,7 @@ def build_summary() -> dict:
 
     return {
         "product": "Telegram Intelligence Platform",
-        "release": "Demo Hardening Release based on Sprint 20 / v0.21.2-demo",
+        "release": "Public demo for product v0.22.0",
         "generated_at": datetime.now(UTC).isoformat(),
         "workspace": {
             "id": report.get("workspace_id", "demo-workspace"),
@@ -93,7 +94,6 @@ def build_summary() -> dict:
             "primary_documents": len(primary_documents),
             "provenance_completeness": prov.get("completeness", 0.6),
             "integrity_hash": prov.get("integrity_hash"),
-            "tests_passed": 88,
             "self_test": run_self_test()["status"],
         },
         "observations": report.get("observations", []),
@@ -137,7 +137,7 @@ a{color:var(--accent);text-decoration:none}.wrap{max-width:1180px;margin:auto;pa
 </style>
 </head>
 <body><main class="wrap">
-<section class="hero"><div class="eyebrow">Evidence-first OSINT · public demonstration</div><h1>Telegram Intelligence Platform</h1><p>Рабочая демонстрация аналитического контура: сбор источников, Workspace Evolution, claims, первичные документы, provenance, верификация аналитиком, дозапрос доказательств, независимость источников и временная история утверждений.</p><div class="badges"><span class="badge status"><i class="dot"></i> Demo service online</span><span class="badge">Sprint 20 · v0.21.2-demo</span><span class="badge">88/88 tests</span><span class="badge">No personal Telegram session required</span></div></section>
+<section class="hero"><div class="eyebrow">Evidence-first OSINT · public demonstration</div><h1>Telegram Intelligence Platform</h1><p>Рабочая демонстрация аналитического контура: сбор источников, Workspace Evolution, claims, первичные документы, provenance, верификация аналитиком, дозапрос доказательств, независимость источников и временная история утверждений.</p><div class="badges"><span class="badge status"><i class="dot"></i> Demo service online</span><span class="badge">Product v0.22.0</span><span class="badge">Regression count in manifest</span><span class="badge">No personal Telegram session required</span></div></section>
 <section id="kpis" class="grid"></section>
 <section class="grid" style="margin-top:16px"><article class="card full"><h2>Сквозной сценарий</h2><div class="flow"><div class="step"><b>01 · Sources</b>Telegram, RSS и Web приводятся к единой модели документа.</div><div class="step"><b>02 · Workspace</b>Источники, ключевые слова, сущности и домены объединяются в контур.</div><div class="step"><b>03 · Evolution</b>Baseline и current snapshots сравниваются без подмены причинностью.</div><div class="step"><b>04 · Provenance</b>Каждый claim связан с расчётами и первичными документами.</div><div class="step"><b>05 · Verification</b>Аналитик подтверждает, отклоняет или запрашивает доказательства.</div><div class="step"><b>06 · Timeline</b>Утверждения связываются как supports, updates, supersedes и contradicts.</div></div><div class="actions" style="margin-top:16px"><button id="startDemo">Запустить пошаговый показ</button><a class="btn secondary" href="/api/self-test" target="_blank">Открыть self-test</a></div><div id="guided" style="margin-top:14px"></div></article>
 <article class="card wide"><h2>Наблюдения Workspace</h2><div id="observations"></div></article><aside class="card side"><h2>Проверяемость</h2><p class="muted">Integrity hash меняется при изменении claims, evidence, review или связей.</p><div id="hash" class="hash"></div><div style="height:16px"></div><h3>Доказательная полнота</h3><div id="completenessLabel" class="muted"></div><div class="bar"><i id="completenessBar"></i></div></aside>
@@ -185,7 +185,7 @@ class DemoHandler(BaseHTTPRequestHandler):
             return
         if path in {"/health", "/api/health"}:
             self_test = run_self_test()
-            payload = {"status": self_test["status"], "mode": "demo", "version": "0.21.2-demo", "assets": len(list(ASSET_DIR.iterdir()))}
+            payload = {"status": self_test["status"], "mode": "demo", "version": DEMO_VERSION, "assets": len(list(ASSET_DIR.iterdir()))}
             status = 200 if self_test["status"] == "ok" else HTTPStatus.SERVICE_UNAVAILABLE
             self._send_bytes(json.dumps(payload, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8", status)
             return

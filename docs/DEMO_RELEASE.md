@@ -27,7 +27,7 @@ docker compose -f docker-compose.demo.yml up --build
 
 ## Облачный запуск
 
-Репозиторий содержит `render.yaml`. После подключения GitHub-репозитория к Render сервис собирается из Dockerfile и запускается с `APP_MODE=demo`.
+Репозиторий содержит `render.yaml` для отдельного production/setup-сервиса с owner-gate. Публичный demo-контур публикуется через GitHub Pages workflow и считается доступным только после внешней проверки канонического URL.
 
 Demo-mode не требует:
 
@@ -48,7 +48,7 @@ APP_MODE=production python -m app.entrypoint
 Он использует Telegram, PostgreSQL, workers и реальные adapters.
 
 
-## Demo Hardening 0.21.2
+## Product demo 0.22.0
 
 Добавлены:
 

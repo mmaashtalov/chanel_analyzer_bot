@@ -30,11 +30,40 @@ jobs:
       - name: Install project and test dependencies
         run: python -m pip install --upgrade pip && python -m pip install ".[dev]"
 
+      - name: Project preflight
+        run: python scripts/project_preflight.py
+
       - name: Compile Python sources
         run: python -m compileall -q app scripts tests
 
       - name: Run regression suite
         run: python -m pytest -q
 
-      - name: Check recovery script
-        run: python -m ruff check scripts/recover_source_overlay.py
+      - name: Check Sprint 0 scripts
+        run: python -m ruff check scripts/generate_manifest.py scripts/project_preflight.py
+
+      - name: Build runtime image from current tree
+        run: docker build --tag chanel-analyzer-bot:ci .
+
+      - name: Demo HTTP smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run --detach --rm \
+            --env APP_MODE=demo \
+            --env PORT=8000 \
+            --publish 127.0.0.1:18080:8000 \
+            chanel-analyzer-bot:ci \
+            python -m app.entrypoint)"
+          cleanup() { docker rm --force "$container_id" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18080/health >/tmp/channel-analyzer-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18080/ready >/tmp/channel-analyzer-ready.json
+          curl --fail --silent http://127.0.0.1:18080/api/demo >/tmp/channel-analyzer-demo.json
+          grep -q '"status": "ok"' /tmp/channel-analyzer-health.json
+          grep -q '"status": "ok"' /tmp/channel-analyzer-ready.json

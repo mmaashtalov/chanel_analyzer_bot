@@ -92,7 +92,7 @@ def filtered_headers(headers: object, *, request: bool) -> list[tuple[str, str]]
 
 class SecureProxyHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    server_version = "ChannelAnalyzerOwnerGate/0.23.1"
+    server_version = "ChannelAnalyzerOwnerGate/0.22.0"
 
     upstream_host = "127.0.0.1"
     upstream_port = 8766

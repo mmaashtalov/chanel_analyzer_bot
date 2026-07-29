@@ -56,7 +56,7 @@ docker compose up -d --build
 
 SHA-256 релиза: `da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae`.
 
-Версия: `0.22.0-product`. Regression: `94/94`.
+Версия: `0.22.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
 
 <!-- production-owner-gate -->
 ## Запуск с телефона
@@ -66,6 +66,6 @@ SHA-256 релиза: `da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea0
 1. Нажмите **Deploy to Render** и задайте `OWNER_GATE_PASSWORD`.
 2. После развёртывания откройте адрес сервиса. Логин внешнего owner-gate: `owner`, пароль — заданный при deploy.
 3. В Control Center создайте внутреннего администратора, введите Telegram-ключи и параметры источников, запустите проверки и нажмите **Запустить продукт**.
-4. Публичный эмулятор работает без ключей: https://mmaashtalov.github.io/chanel_analyzer_bot/
+4. После включения GitHub Pages канонический URL эмулятора: https://mmaashtalov.github.io/chanel_analyzer_bot/
 
 `/health`, `/ready` и `/emulator` доступны публично. Control Center и управляющие API защищены внешним owner-gate и внутренней сессией администратора.

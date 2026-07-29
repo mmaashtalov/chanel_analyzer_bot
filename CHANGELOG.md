@@ -9,7 +9,7 @@
 - Эмулятор встроен в тот же интерфейс.
 - Docker Compose запускает PostgreSQL и Control Center одной командой.
 - Добавлены product runbook и emulator guide.
-- Regression: 94/94.
+- Regression-счётчик вычисляется из фактического дерева и фиксируется в `MANIFEST.json`.
 
 # 0.21.2-demo — Demo Hardening
 
