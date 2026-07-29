@@ -5,6 +5,7 @@ Revises: 0013_evidence_acquisition
 """
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0014_controlled_external_acquisition"
