@@ -4,8 +4,8 @@
   "package_version": "0.24.0",
   "canonical_archive": {
     "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-    "size": 408871,
-    "sha256": "24c0debbc2c826d2012364b75085cc5f9e93924d249ab05949628fdee629fce7"
+    "size": 408865,
+    "sha256": "01ad4d0be6ecf4a65c0627b96b3a465b0ff6e9381dc2101e076a5198f49c8f75"
   },
   "tests": "128/128",
   "test_count": 128,
@@ -139,8 +139,8 @@
     },
     {
       "path": "alembic/versions/0014_controlled_external_acquisition.py",
-      "size": 2042,
-      "sha256": "c3cb6d85092833a9ed5b817a3f19b7b7ba24d7b0fdea48b0767364486f94d1d9"
+      "size": 2043,
+      "sha256": "81f8721f9120bb113c66a45b21aa8531f113a1a6bbc1514c74ef92a18e0093a8"
     },
     {
       "path": "alembic/versions/0015_source_independence.py",
@@ -954,8 +954,8 @@
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-      "size": 408871,
-      "sha256": "24c0debbc2c826d2012364b75085cc5f9e93924d249ab05949628fdee629fce7"
+      "size": 408865,
+      "sha256": "01ad4d0be6ecf4a65c0627b96b3a465b0ff6e9381dc2101e076a5198f49c8f75"
     },
     {
       "path": "render.yaml",
@@ -995,7 +995,7 @@
     {
       "path": "scripts/project_preflight.py",
       "size": 6935,
-      "sha256": "16431a5cfe9686389f2c70049c0aa7ae93b0a0422c64049715fe13efc95a2c14"
+      "sha256": "4877a481dcd773cb8689258e758ebb4793961e6193cc7bdd41b315402f233ce8"
     },
     {
       "path": "scripts/recover_source_overlay.py",
