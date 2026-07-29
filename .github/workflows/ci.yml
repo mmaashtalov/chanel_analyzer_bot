@@ -1,0 +1,150 @@
+name: Production CI
+
+on:
+  push:
+    branches:
+      - main
+      - agent/production-integration
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PRODUCT_CONFIG_DIR: /tmp/channel-analyzer-config
+      PRODUCT_RUNTIME_DIR: /tmp/channel-analyzer-runtime
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/osint
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: osint
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d osint"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install ".[dev]"
+
+      - name: Project preflight
+        run: python scripts/project_preflight.py
+
+      - name: Compile Python sources
+        run: python -m compileall -q app alembic scripts tests
+
+      - name: Run regression suite
+        run: python -m pytest -q
+
+      - name: Check production integration files
+        run: >-
+          python -m ruff check
+          app/db/url.py
+          app/db/session.py
+          alembic/env.py
+          alembic/versions/0014_controlled_external_acquisition.py
+          tests/test_database_url.py
+          scripts/generate_manifest.py
+          scripts/project_preflight.py
+
+      - name: Apply PostgreSQL migrations
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current | tee /tmp/alembic-current.txt
+          python -m alembic heads | tee /tmp/alembic-heads.txt
+          grep -q "0018" /tmp/alembic-current.txt
+          test "$(grep -c '(head)' /tmp/alembic-heads.txt)" -eq 1
+
+      - name: Build runtime image from current tree
+        run: docker build --tag chanel-analyzer-bot:ci .
+
+      - name: Demo HTTP smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run --detach --rm \
+            --env APP_MODE=demo \
+            --env PORT=8000 \
+            --publish 127.0.0.1:18080:8000 \
+            chanel-analyzer-bot:ci \
+            python -m app.entrypoint)"
+          cleanup() { docker rm --force "$container_id" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18080/health >/tmp/channel-analyzer-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18080/ready >/tmp/channel-analyzer-ready.json
+          curl --fail --silent http://127.0.0.1:18080/api/demo >/tmp/channel-analyzer-demo.json
+          grep -q '"status": "ok"' /tmp/channel-analyzer-health.json
+          grep -q '"status": "ok"' /tmp/channel-analyzer-ready.json
+
+      - name: Owner-gate setup smoke test without Telegram keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run --detach --rm \
+            --env PORT=8000 \
+            --env UPSTREAM_PORT=8766 \
+            --env OWNER_GATE_USERNAME=owner \
+            --env OWNER_GATE_PASSWORD=ci-owner-password \
+            --env PRODUCT_CONFIG_DIR=/tmp/product-config \
+            --env PRODUCT_RUNTIME_DIR=/tmp/product-runtime \
+            --publish 127.0.0.1:18081:8000 \
+            chanel-analyzer-bot:ci \
+            python -m app.setup.secure_proxy)"
+          cleanup() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              docker logs "$container_id" || true
+            fi
+            docker rm --force "$container_id" >/dev/null 2>&1 || true
+            exit "$status"
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18081/health >/tmp/owner-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          health = json.loads(Path('/tmp/owner-health.json').read_text())
+          assert health['status'] == 'ok'
+          PY
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18081/)" = "401"
+          curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/ >/tmp/control-center.html
+          curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/api/status >/tmp/control-center-status.json
+          grep -q '<h1>Telegram Intelligence</h1>' /tmp/control-center.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          status = json.loads(Path('/tmp/control-center-status.json').read_text())
+          assert status['configured'] is False
+          assert status['status'] in {'stopped', 'degraded', 'error'}
+          assert 'runtime' in status
+          PY

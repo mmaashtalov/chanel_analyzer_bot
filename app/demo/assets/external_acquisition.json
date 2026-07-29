@@ -1,0 +1,79 @@
+{
+  "sprint": 18,
+  "version": "0.19.0",
+  "scenario": "Controlled external acquisition after empty local-first lookup",
+  "request": {
+    "id": "req-demo-sprint18",
+    "workspace_id": "demo-workspace",
+    "claim_id": "claim-demo",
+    "status_history": [
+      {
+        "status": "queued",
+        "at": "2026-07-28T08:21:27.569919+00:00"
+      },
+      {
+        "status": "collecting",
+        "at": "2026-07-28T08:21:37.569919+00:00"
+      },
+      {
+        "status": "linking",
+        "at": "2026-07-28T08:23:07.569919+00:00"
+      },
+      {
+        "status": "resolved",
+        "at": "2026-07-28T08:23:27.569919+00:00"
+      }
+    ],
+    "attempts": 1,
+    "max_attempts": 3,
+    "limits": {
+      "lookback_days": 30,
+      "max_sources": 10,
+      "max_documents_per_source": 50,
+      "timeout_seconds": 30
+    }
+  },
+  "source_plan": [
+    {
+      "source_type": "telegram",
+      "source_id": "opk_monitor",
+      "reason": "workspace channel"
+    },
+    {
+      "source_type": "rss",
+      "source_id": "https://example.org/rss",
+      "reason": "workspace rss"
+    }
+  ],
+  "collection": {
+    "local_candidates_before_network": 0,
+    "sources_attempted": 2,
+    "documents_collected": 18,
+    "documents_accepted": 7,
+    "duplicates": 11,
+    "source_errors": 0
+  },
+  "linking": {
+    "new_primary_document_links": 2,
+    "source_types": [
+      "telegram",
+      "rss"
+    ],
+    "final_status": "resolved"
+  },
+  "controls": [
+    "workspace-scoped source plan",
+    "local-first lookup",
+    "HTTP/HTTPS only RSS fetch",
+    "private and loopback address rejection",
+    "payload-size limit",
+    "timeout",
+    "max attempts",
+    "exponential backoff"
+  ],
+  "limitations": [
+    "Multiple source types do not yet prove source independence.",
+    "Production deployment should enforce network egress policy in addition to application checks."
+  ],
+  "trace_sha256": "64c07be26ad18648481d50ff5102f90def0133143e6b75c8d6833e7914db4604"
+}

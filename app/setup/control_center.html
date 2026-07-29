@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Telegram Intelligence · Mobile Operations</title>
+  <style>
+    :root { --bg:#07111f; --card:#0e1b2d; --line:#21334a; --text:#e9f1fb; --muted:#91a3ba; --accent:#54e1b4; --warn:#ffc857; --bad:#ff6b7a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(145deg,#07111f,#0b1730); color:var(--text); font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .wrap { max-width:860px; margin:auto; padding:18px 14px 40px; }
+    h1 { font-size:clamp(28px,8vw,48px); line-height:1.03; margin:8px 0 12px; }
+    h2 { font-size:20px; margin:0 0 8px; }
+    h3 { font-size:16px; margin:18px 0 7px; }
+    p { line-height:1.48; }
+    .muted { color:var(--muted); }
+    .eyebrow { color:var(--accent); font-weight:800; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    .card { background:rgba(14,27,45,.96); border:1px solid var(--line); border-radius:18px; padding:18px; margin:14px 0; box-shadow:0 14px 34px #0004; }
+    .hero { padding:12px 4px 4px; }
+    .notice { background:#102640; border:1px solid var(--line); border-radius:12px; padding:12px; }
+    .status-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .dot { width:11px; height:11px; border-radius:50%; background:var(--bad); display:inline-block; }
+    .dot.running { background:var(--accent); box-shadow:0 0 15px var(--accent); }
+    .dot.ready { background:var(--warn); }
+    label { display:block; color:#b9c8da; margin:12px 0 5px; }
+    input, select { width:100%; border:1px solid var(--line); border-radius:10px; background:#081522; color:var(--text); padding:12px; font:inherit; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:15px; }
+    button, .button { border:0; border-radius:11px; padding:12px 15px; font:inherit; font-weight:800; cursor:pointer; background:var(--accent); color:#062116; text-decoration:none; display:inline-block; }
+    button.secondary, .button.secondary { background:#162943; color:var(--text); border:1px solid var(--line); }
+    button.warn { background:var(--warn); color:#241b00; }
+    button.danger { background:#482331; color:#ffdce0; border:1px solid #713445; }
+    button:disabled { opacity:.55; cursor:wait; }
+    pre { white-space:pre-wrap; overflow:auto; max-height:360px; margin:10px 0 0; background:#06101c; border-radius:12px; padding:12px; color:#d7e4f3; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .check { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid #ffffff12; padding:9px 0; }
+    .ok { color:var(--accent); } .error { color:var(--bad); } .attention { color:var(--warn); }
+    .small { font-size:13px; }
+    .hidden { display:none; }
+    @media (max-width:680px) { .row, .grid { grid-template-columns:1fr; } .wrap { padding:12px 10px 32px; } .card { padding:15px; } button, .button { width:100%; text-align:center; } }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">v0.24.0 · Pilot Reliability</div>
+    <h1>Telegram Intelligence</h1>
+    <p class="muted">Владелец проходит весь операционный путь со смартфона: Deploy → Setup → Migrations → Start → Analyze. SSH и локальный Docker после развёртывания не нужны.</p>
+    <div class="notice small">Секреты передаются только в защищённый owner-контур, не возвращаются в статусе и не записываются в журнал событий.</div>
+  </section>
+
+  <section class="card">
+    <div class="status-line"><span id="dot" class="dot"></span><h2 id="state">Загрузка состояния…</h2></div>
+    <p id="summary" class="muted">Проверяю Control Center.</p>
+    <div class="actions">
+      <button onclick="refresh()">Обновить статус</button>
+      <button class="secondary" onclick="diagnostics()">Диагностика</button>
+      <button class="secondary" onclick="updateCheck()">Проверить обновление</button>
+    </div>
+    <pre id="operation" class="small"></pre>
+  </section>
+
+  <section class="card">
+    <h2>1. Telegram и база</h2>
+    <p class="muted small">Проверка ниже статическая: формат ключей и обязательные поля. Реальный Telegram RPC не выполняется автоматически.</p>
+    <label for="telegram_bot_token">Bot Token</label>
+    <input id="telegram_bot_token" type="password" autocomplete="off" placeholder="123456:ABC…">
+    <div class="row">
+      <div><label for="telegram_api_id">API ID</label><input id="telegram_api_id" inputmode="numeric"></div>
+      <div><label for="telegram_api_hash">API Hash</label><input id="telegram_api_hash" type="password" autocomplete="off"></div>
+    </div>
+    <label for="telegram_string_session">Telethon String Session</label>
+    <input id="telegram_string_session" type="password" autocomplete="off">
+    <label for="database_url">PostgreSQL URL</label>
+    <input id="database_url" autocomplete="off" placeholder="Сохранённый URL скрыт; пустое поле оставляет его без изменений">
+    <div class="row">
+      <div><label for="analysis_lookback_days">Глубина анализа, дней</label><input id="analysis_lookback_days" type="number" value="365"></div>
+      <div><label for="analysis_max_posts">Максимум постов</label><input id="analysis_max_posts" type="number" value="5000"></div>
+    </div>
+    <label for="log_level">Уровень логов</label>
+    <select id="log_level"><option>INFO</option><option>DEBUG</option><option>WARNING</option><option>ERROR</option></select>
+    <div class="actions">
+      <button onclick="checkCredentials()">Проверить поля</button>
+      <button class="secondary" onclick="saveConfig()">Сохранить конфигурацию</button>
+    </div>
+    <pre id="credentials" class="small"></pre>
+  </section>
+
+  <section class="card">
+    <h2>2. Миграции и lifecycle</h2>
+    <p class="muted small">Миграции применяются отдельно и повторяемо. При запуске система также делает защитную проверку.</p>
+    <div class="actions">
+      <button onclick="migrate()">Применить миграции</button>
+      <button onclick="action('start')">Запустить продукт</button>
+      <button class="secondary" onclick="action('restart')">Перезапустить</button>
+      <button class="danger" onclick="action('stop')">Остановить</button>
+    </div>
+    <pre id="events" class="small"></pre>
+  </section>
+
+  <section class="card">
+    <h2>3. Backup и восстановление</h2>
+    <p class="muted small">Backup скачивается как JSON-файл с SHA-256. Он содержит конфигурацию, включая секреты, поэтому храните его как пароль.</p>
+    <div class="actions">
+      <a class="button secondary" href="/api/backup">Скачать backup</a>
+      <button class="secondary" onclick="prepareUpdate()">Подготовить безопасное обновление</button>
+    </div>
+    <label for="backup_file">Файл backup для восстановления</label>
+    <input id="backup_file" type="file" accept="application/json,.json">
+    <div class="actions"><button class="warn" onclick="restoreBackup()">Восстановить конфигурацию</button></div>
+    <pre id="backup_result" class="small"></pre>
+  </section>
+
+  <section class="card">
+    <h2>4. Последние ошибки</h2>
+    <pre id="diagnostics" class="small">Нажмите «Диагностика».</pre>
+  </section>
+</main>
+<script>
+const ids = ['telegram_bot_token','telegram_api_id','telegram_api_hash','telegram_string_session','database_url','analysis_lookback_days','analysis_max_posts','log_level'];
+const $ = id => document.getElementById(id);
+function detailText(value) { return typeof value === 'string' ? value : JSON.stringify(value, null, 2); }
+async function api(path, options = {}) {
+  const response = await fetch(path, { headers: {'Content-Type':'application/json'}, ...options });
+  let body = {};
+  try { body = await response.json(); } catch (_) { body = {}; }
+  if (!response.ok) throw new Error(detailText(body.detail || body.message || `HTTP ${response.status}`));
+  return body;
+}
+function formBody() {
+  const body = {};
+  for (const id of ids) {
+    const element = $(id);
+    if (element.value !== '') body[id] = element.type === 'number' ? Number(element.value) : element.value;
+  }
+  return body;
+}
+function renderChecks(target, payload) {
+  if (!payload) { $(target).textContent = ''; return; }
+  $(target).textContent = JSON.stringify(payload, null, 2);
+}
+async function refresh() {
+  try {
+    const status = await api('/api/status');
+    const runtime = status.runtime || {};
+    const recovery = status.recovery || {};
+    const active = ['running', 'degraded'].includes(status.status);
+    $('state').textContent = status.status === 'running' ? 'Продукт работает' : status.status === 'degraded' || status.status === 'error' ? 'Требуется внимание' : 'Продукт остановлен';
+    $('dot').className = `dot ${status.status === 'running' ? 'running' : status.status === 'degraded' || status.status === 'error' ? 'ready' : ''}`;
+    const cfg = status.config || {};
+    if (cfg.telegram_api_id != null) $('telegram_api_id').value = cfg.telegram_api_id;
+    if (cfg.analysis_lookback_days != null) $('analysis_lookback_days').value = cfg.analysis_lookback_days;
+    if (cfg.analysis_max_posts != null) $('analysis_max_posts').value = cfg.analysis_max_posts;
+    if (cfg.log_level != null) $('log_level').value = cfg.log_level;
+    $('summary').textContent = `Конфигурация: ${status.configured ? 'готова' : 'не готова'} · Runtime: ${runtime.status || 'неизвестен'} · ${recovery.suppressed ? 'автовосстановление остановлено' : recovery.next_retry_epoch ? 'запланировано автовосстановление' : active ? 'контур наблюдения активен' : 'продукт остановлен'}`;
+    $('operation').textContent = JSON.stringify({collector: status.collector, runtime, recovery, operation: status.operation, last_error: status.last_error, database: cfg.database_url_masked || (cfg.database_url_configured ? 'configured' : 'not configured')}, null, 2);
+    $('events').textContent = (status.events || []).map(item => `${item.at} · ${item.message}`).join('\n');
+  } catch (error) { $('summary').textContent = error.message; }
+}
+async function checkCredentials() {
+  try { renderChecks('credentials', await api('/api/credentials/check', {method:'POST', body:JSON.stringify(formBody())})); }
+  catch (error) { $('credentials').textContent = error.message; }
+}
+async function saveConfig() {
+  try { await api('/api/config', {method:'POST', body:JSON.stringify(formBody())}); $('credentials').textContent = 'Конфигурация сохранена'; await refresh(); }
+  catch (error) { $('credentials').textContent = error.message; }
+}
+async function migrate() {
+  try { $('summary').textContent = 'Применяю миграции…'; renderChecks('credentials', await api('/api/migrate', {method:'POST', body:'{}'})); await refresh(); }
+  catch (error) { $('credentials').textContent = error.message; await refresh(); }
+}
+async function action(name) {
+  try { $('summary').textContent = 'Выполняю операцию…'; await api(`/api/${name}`, {method:'POST', body:'{}'}); await refresh(); }
+  catch (error) { $('summary').textContent = error.message; await refresh(); }
+}
+async function diagnostics() {
+  try { renderChecks('diagnostics', await api('/api/diagnostics')); }
+  catch (error) { $('diagnostics').textContent = error.message; }
+}
+async function updateCheck() {
+  try { renderChecks('diagnostics', await api('/api/update-check')); }
+  catch (error) { $('diagnostics').textContent = error.message; }
+}
+async function prepareUpdate() {
+  try { renderChecks('backup_result', await api('/api/update/prepare', {method:'POST', body:'{}'})); await refresh(); }
+  catch (error) { $('backup_result').textContent = error.message; }
+}
+async function restoreBackup() {
+  const file = $('backup_file').files[0];
+  if (!file) { $('backup_result').textContent = 'Выберите JSON-файл backup'; return; }
+  try { const payload = JSON.parse(await file.text()); renderChecks('backup_result', await api('/api/restore', {method:'POST', body:JSON.stringify(payload)})); await refresh(); }
+  catch (error) { $('backup_result').textContent = error.message; }
+}
+refresh();
+setInterval(refresh, 7000);
+</script>
+</body>
+</html>

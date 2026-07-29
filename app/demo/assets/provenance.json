@@ -1,0 +1,408 @@
+{
+  "report": {
+    "workspace_id": "demo-workspace",
+    "workspace_name": "ОПК и БПЛА",
+    "baseline_snapshot_id": "snapshot-baseline",
+    "current_snapshot_id": "snapshot-current",
+    "baseline_generated_at": "2026-07-21T06:55:09+00:00",
+    "current_generated_at": "2026-07-28T06:55:09+00:00",
+    "trend": "escalating",
+    "confidence": 0.95,
+    "metric_deltas": {
+      "total_posts_absolute": 115,
+      "total_posts_percent": 0.5476190476190477,
+      "coverage_ratio": 0.0,
+      "weighted_confidence": 0.0,
+      "mean_views_percent": 0.21379310344827587,
+      "engagement_percent": 0.0,
+      "activity_percent": 0.55
+    },
+    "added_entities": [
+      [
+        "Ростех",
+        14
+      ]
+    ],
+    "removed_entities": [],
+    "added_domains": [
+      [
+        "example.org",
+        8
+      ]
+    ],
+    "removed_domains": [],
+    "added_keywords": [
+      [
+        "испытания",
+        11
+      ]
+    ],
+    "removed_keywords": [],
+    "alert_delta": {
+      "critical": 1,
+      "high": 4
+    },
+    "observations": [
+      {
+        "category": "alerts",
+        "severity": "high",
+        "observation": "Количество High/Critical сигналов увеличилось.",
+        "evidence": [
+          "Изменение: +5"
+        ],
+        "confidence": 0.9,
+        "assessment": "Наблюдается эскалация значимых изменений; требуется проверка первичных публикаций."
+      },
+      {
+        "category": "activity",
+        "severity": "high",
+        "observation": "Объём публикаций вырос на 55%.",
+        "evidence": [
+          "Было: 210",
+          "Стало: 325"
+        ],
+        "confidence": 0.8825396825396825,
+        "assessment": "Изменение указывает на сдвиг интенсивности информационной активности, но не объясняет его причину."
+      },
+      {
+        "category": "narrative",
+        "severity": "medium",
+        "observation": "Появились новые ключевые темы: 1.",
+        "evidence": [
+          "испытания"
+        ],
+        "confidence": 0.78,
+        "assessment": "Есть признаки тематического дрейфа; вывод ограничен набором ключевых слов Workspace."
+      },
+      {
+        "category": "entities",
+        "severity": "medium",
+        "observation": "В информационное поле вошли новые сущности: 1.",
+        "evidence": [
+          "Ростех"
+        ],
+        "confidence": 0.67,
+        "assessment": "Появление новых сущностей может отражать расширение повестки или новый сюжет."
+      },
+      {
+        "category": "domains",
+        "severity": "low",
+        "observation": "Выявлены новые внешние домены: 1.",
+        "evidence": [
+          "example.org"
+        ],
+        "confidence": 0.8,
+        "assessment": "Источникоснабжение контура изменилось; это не доказывает аффилированность или координацию."
+      }
+    ],
+    "limitations": [
+      "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+      "Изменение частоты не доказывает причинность, влияние или координацию.",
+      "Снижение покрытия уменьшает сопоставимость периодов."
+    ],
+    "methodology_version": "workspace-evolution-v1"
+  },
+  "provenance": {
+    "bundle_id": "bundle_6c1658a5a1bd5efea0793caff4b88446",
+    "subject_type": "workspace_evolution_report",
+    "subject_id": "demo-workspace:snapshot-baseline:snapshot-current",
+    "methodology_version": "document-provenance-v1",
+    "generated_at": "2026-07-28T06:55:09.832693+00:00",
+    "claims": [
+      {
+        "claim_id": "claim_406dd33a895e57638b40f91cbfe82fca",
+        "claim_index": 1,
+        "category": "alerts",
+        "statement": "Количество High/Critical сигналов увеличилось.",
+        "assessment": "Наблюдается эскалация значимых изменений; требуется проверка первичных публикаций.",
+        "severity": "high",
+        "confidence": 0.9,
+        "evidence_ids": [
+          "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+          "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+          "ev_78ce7b6764d457ba9e62df84071a8b8b"
+        ],
+        "evidence_quality": 0.7520000000000001,
+        "caveats": [
+          "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+          "Изменение частоты не доказывает причинность, влияние или координацию.",
+          "Подходящие первичные документы в хранилище Workspace не найдены."
+        ]
+      },
+      {
+        "claim_id": "claim_a95a01d64f60533bb9dbd33db587aa9d",
+        "claim_index": 2,
+        "category": "activity",
+        "statement": "Объём публикаций вырос на 55%.",
+        "assessment": "Изменение указывает на сдвиг интенсивности информационной активности, но не объясняет его причину.",
+        "severity": "high",
+        "confidence": 0.8825396825396825,
+        "evidence_ids": [
+          "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+          "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+          "ev_7fb2b458f98655b9a0eacecd0131a266",
+          "ev_4e2986c9c1ab540c8bb873bd42e3da02"
+        ],
+        "evidence_quality": 0.8888571428571428,
+        "caveats": [
+          "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+          "Подходящие первичные документы в хранилище Workspace не найдены."
+        ]
+      },
+      {
+        "claim_id": "claim_7b6a38efca30547eab0d372473d1b125",
+        "claim_index": 3,
+        "category": "narrative",
+        "statement": "Появились новые ключевые темы: 1.",
+        "assessment": "Есть признаки тематического дрейфа; вывод ограничен набором ключевых слов Workspace.",
+        "severity": "medium",
+        "confidence": 0.78,
+        "evidence_ids": [
+          "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+          "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+          "ev_2cedbc6971065e98a836b5edd0f3204f",
+          "evdoc_fd76b921c768554190db74487b1d062c"
+        ],
+        "evidence_quality": 0.8104,
+        "caveats": [
+          "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+          "Изменение частоты не доказывает причинность, влияние или координацию."
+        ]
+      },
+      {
+        "claim_id": "claim_a48f033782a7592c9180fe263df1a198",
+        "claim_index": 4,
+        "category": "entities",
+        "statement": "В информационное поле вошли новые сущности: 1.",
+        "assessment": "Появление новых сущностей может отражать расширение повестки или новый сюжет.",
+        "severity": "medium",
+        "confidence": 0.67,
+        "evidence_ids": [
+          "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+          "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+          "ev_cc6494c3ebb2502981466d2e85283991",
+          "evdoc_fd76b921c768554190db74487b1d062c",
+          "evdoc_5c99de99a1025a29a1e24f48b627ad0b"
+        ],
+        "evidence_quality": 0.8706000000000002,
+        "caveats": [
+          "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+          "Изменение частоты не доказывает причинность, влияние или координацию."
+        ]
+      },
+      {
+        "claim_id": "claim_2c7a7254da515c098f99e195ed313dae",
+        "claim_index": 5,
+        "category": "domains",
+        "statement": "Выявлены новые внешние домены: 1.",
+        "assessment": "Источникоснабжение контура изменилось; это не доказывает аффилированность или координацию.",
+        "severity": "low",
+        "confidence": 0.8,
+        "evidence_ids": [
+          "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+          "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+          "ev_e6a6a0e10d7c5f46ac11dc15fd32d72f",
+          "evdoc_fd76b921c768554190db74487b1d062c",
+          "evdoc_5c99de99a1025a29a1e24f48b627ad0b"
+        ],
+        "evidence_quality": 0.8940000000000001,
+        "caveats": [
+          "Сравниваются сохранённые snapshots; исходные публикации повторно не анализируются.",
+          "Изменение частоты не доказывает причинность, влияние или координацию."
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "ev_2cedbc6971065e98a836b5edd0f3204f",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[3].evidence",
+        "label": "Расчёт Workspace Evolution / narrative",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "испытания",
+        "content_hash": "f39798b095b37ab7e8bfe0a112d089b107e7f944f004b506c69a36b61d1a24f0",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_4e2986c9c1ab540c8bb873bd42e3da02",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[2].evidence",
+        "label": "Расчёт Workspace Evolution / activity",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "Стало: 325",
+        "content_hash": "4e929e8ab8cbba55e13401159111f73fa18d081b6868f9126ca43a9dc0f8f3d7",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_78ce7b6764d457ba9e62df84071a8b8b",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[1].evidence",
+        "label": "Расчёт Workspace Evolution / alerts",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "Изменение: +5",
+        "content_hash": "2c2bcc5680e180eabbe307787a222e9ad55a013a66beff6d2a3297138e360fdd",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_7fb2b458f98655b9a0eacecd0131a266",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[2].evidence",
+        "label": "Расчёт Workspace Evolution / activity",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "Было: 210",
+        "content_hash": "fdc835c168bc75bd49d82d59f989b9a4f1a54107d8431c44b252f19d7ef95f42",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_a5302a1f03ec5e029bf93e4e37b6df20",
+        "kind": "snapshot",
+        "source_id": "snapshot-baseline",
+        "locator": "workspace_intelligence_snapshot",
+        "label": "Baseline Workspace Intelligence Snapshot",
+        "strength": "contextual",
+        "observed_at": "2026-07-21T06:55:09+00:00",
+        "value": null,
+        "content_hash": "08c7f47154b15987ef9f1d3ab8e4aaa92e529cfa0ae34cb47627ec773f0b99d7",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_cc6494c3ebb2502981466d2e85283991",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[4].evidence",
+        "label": "Расчёт Workspace Evolution / entities",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "Ростех",
+        "content_hash": "d3650fd91f005f7a7cd0b56cba41979a28dd59eb66929f9b30a3e4c50008ae64",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_d4ddc552857e5d2b84f3b2f9d39da965",
+        "kind": "snapshot",
+        "source_id": "snapshot-current",
+        "locator": "workspace_intelligence_snapshot",
+        "label": "Current Workspace Intelligence Snapshot",
+        "strength": "contextual",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": null,
+        "content_hash": "986ac59baa01179de548fa916ac562a00218c6147060dd2c007d91fe52eacfec",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "ev_e6a6a0e10d7c5f46ac11dc15fd32d72f",
+        "kind": "computation",
+        "source_id": "snapshot-baseline:snapshot-current",
+        "locator": "observations[5].evidence",
+        "label": "Расчёт Workspace Evolution / domains",
+        "strength": "direct",
+        "observed_at": "2026-07-28T06:55:09+00:00",
+        "value": "example.org",
+        "content_hash": "fc3936cefd636b7064ec698d9c87f30910ce4437a4f0fc7e0660582da7d6b307",
+        "document_id": null,
+        "source_type": null,
+        "canonical_url": null,
+        "author": null,
+        "excerpt": null,
+        "published_at": null,
+        "fingerprint": null
+      },
+      {
+        "evidence_id": "evdoc_5c99de99a1025a29a1e24f48b627ad0b",
+        "kind": "primary_document",
+        "source_id": "src-telegram",
+        "locator": "https://t.me/opk_monitor/101",
+        "label": "Ростех сообщил о новом этапе испытаний БПЛА",
+        "strength": "corroborating",
+        "observed_at": "2026-07-27T22:55:09+00:00",
+        "value": {
+          "source_external_id": "opk_monitor"
+        },
+        "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "document_id": "doc-telegram-101",
+        "source_type": "telegram",
+        "canonical_url": "https://t.me/opk_monitor/101",
+        "author": "Редакция канала",
+        "excerpt": "Ростех сообщил о переходе программы БПЛА к новому этапу испытаний. Дополнительные материалы опубликованы на example.org.",
+        "published_at": "2026-07-27T22:55:09+00:00",
+        "fingerprint": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      {
+        "evidence_id": "evdoc_fd76b921c768554190db74487b1d062c",
+        "kind": "primary_document",
+        "source_id": "src-rss",
+        "locator": "https://example.org/news/202",
+        "label": "Испытания новой беспилотной системы",
+        "strength": "corroborating",
+        "observed_at": "2026-07-28T00:55:09+00:00",
+        "value": {
+          "source_external_id": "https://example.org/rss"
+        },
+        "content_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "document_id": "doc-rss-202",
+        "source_type": "rss",
+        "canonical_url": "https://example.org/news/202",
+        "author": "Информационная служба",
+        "excerpt": "В публикации упоминаются Ростех, ОАК и испытания беспилотной системы.",
+        "published_at": "2026-07-28T00:55:09+00:00",
+        "fingerprint": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    ],
+    "completeness": 0.6,
+    "integrity_hash": "6fe21c18da531954ab55c383680494776f178a45e7034fd59f5e585482bdb4b3",
+    "limitations": [
+      "Первичные документы подтверждают наличие наблюдаемого материала, но сами по себе не доказывают внешнюю причину изменения.",
+      "Document-level linkage зависит от полноты локального хранилища источников и правил сопоставления Workspace."
+    ]
+  }
+}

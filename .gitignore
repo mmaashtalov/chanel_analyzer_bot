@@ -1,0 +1,30 @@
+# Python caches and local tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local environments and secrets
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Local runtime data and generated reports
+data/
+reports/
+*.log
+
+# Build output
+build/
+dist/
+*.egg-info/
+
+# Explicitly excluded legacy names; they are not product source.
+bot.py
+parser.py

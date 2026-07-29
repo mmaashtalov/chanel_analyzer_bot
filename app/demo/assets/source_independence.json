@@ -1,0 +1,197 @@
+{
+  "bundle_id": "bundle_sprint19_demo",
+  "subject_type": "workspace_evolution_report",
+  "subject_id": "demo-workspace:s19",
+  "methodology_version": "source-independence-v1",
+  "generated_at": "2026-07-28T09:00:00+00:00",
+  "claims": [
+    {
+      "claim_id": "claim_independent",
+      "claim_index": 1,
+      "category": "demo",
+      "statement": "Два независимых источника сообщают о новом этапе испытаний.",
+      "assessment": "Демонстрационная оценка независимости источников.",
+      "severity": "medium",
+      "confidence": 0.8,
+      "evidence_quality": 0.82,
+      "evidence_ids": [
+        "ev_tg",
+        "ev_rss"
+      ],
+      "review_status": "unreviewed",
+      "review_version": 0,
+      "independence_score": 1.0,
+      "corroboration_score": 0.750482,
+      "corroboration": {
+        "document_count": 2,
+        "independent_cluster_count": 2,
+        "clusters": [
+          {
+            "cluster_id": "cluster_7c9a07a6c03d220f",
+            "evidence_ids": [
+              "ev_rss"
+            ],
+            "source_ids": [
+              "src_rss"
+            ],
+            "source_types": [
+              "rss"
+            ],
+            "upstream_domains": [
+              "industry-news.example"
+            ],
+            "reason": "independent_document"
+          },
+          {
+            "cluster_id": "cluster_a2ddd6f2d56573f3",
+            "evidence_ids": [
+              "ev_tg"
+            ],
+            "source_ids": [
+              "src_tg"
+            ],
+            "source_types": [
+              "telegram"
+            ],
+            "upstream_domains": [
+              "t.me"
+            ],
+            "reason": "independent_document"
+          }
+        ],
+        "caveats": []
+      },
+      "caveats": [],
+      "review_comment": null
+    },
+    {
+      "claim_id": "claim_reprint",
+      "claim_index": 2,
+      "category": "demo",
+      "statement": "Несколько публикаций повторяют один и тот же материал.",
+      "assessment": "Демонстрационная оценка независимости источников.",
+      "severity": "medium",
+      "confidence": 0.8,
+      "evidence_quality": 0.82,
+      "evidence_ids": [
+        "ev_copy1",
+        "ev_copy2"
+      ],
+      "review_status": "unreviewed",
+      "review_version": 0,
+      "independence_score": 0.5,
+      "corroboration_score": 0.575608,
+      "corroboration": {
+        "document_count": 2,
+        "independent_cluster_count": 1,
+        "clusters": [
+          {
+            "cluster_id": "cluster_c21df928df7a68da",
+            "evidence_ids": [
+              "ev_copy1",
+              "ev_copy2"
+            ],
+            "source_ids": [
+              "src_a",
+              "src_b"
+            ],
+            "source_types": [
+              "rss",
+              "telegram"
+            ],
+            "upstream_domains": [
+              "mirror.example",
+              "t.me"
+            ],
+            "reason": "identical_content_hash"
+          }
+        ],
+        "caveats": [
+          "Нет двух независимо подтверждающих кластеров.",
+          "Часть документов определена как перепечатки или общий upstream."
+        ]
+      },
+      "caveats": [
+        "Нет двух независимо подтверждающих кластеров.",
+        "Часть документов определена как перепечатки или общий upstream."
+      ],
+      "review_comment": null
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev_tg",
+      "kind": "primary_document",
+      "source_id": "src_tg",
+      "locator": "https://t.me/opk/101",
+      "label": "ev_tg",
+      "strength": "corroborating",
+      "observed_at": null,
+      "content_hash": "hash_tg",
+      "document_id": "doc_tg",
+      "source_type": "telegram",
+      "canonical_url": "https://t.me/opk/101",
+      "author": null,
+      "excerpt": "Ростех сообщил о новом этапе испытаний беспилотной системы.",
+      "published_at": null,
+      "fingerprint": "fp_tg"
+    },
+    {
+      "evidence_id": "ev_rss",
+      "kind": "primary_document",
+      "source_id": "src_rss",
+      "locator": "https://industry-news.example/article/77",
+      "label": "ev_rss",
+      "strength": "corroborating",
+      "observed_at": null,
+      "content_hash": "hash_rss",
+      "document_id": "doc_rss",
+      "source_type": "rss",
+      "canonical_url": "https://industry-news.example/article/77",
+      "author": null,
+      "excerpt": "Отраслевое издание подтвердило начало нового этапа испытаний.",
+      "published_at": null,
+      "fingerprint": "fp_rss"
+    },
+    {
+      "evidence_id": "ev_copy1",
+      "kind": "primary_document",
+      "source_id": "src_a",
+      "locator": "https://t.me/a/1",
+      "label": "ev_copy1",
+      "strength": "corroborating",
+      "observed_at": null,
+      "content_hash": "same_hash",
+      "document_id": "doc_copy1",
+      "source_type": "telegram",
+      "canonical_url": "https://t.me/a/1",
+      "author": null,
+      "excerpt": "Одинаковый текст сообщения о событии.",
+      "published_at": null,
+      "fingerprint": "same_fp"
+    },
+    {
+      "evidence_id": "ev_copy2",
+      "kind": "primary_document",
+      "source_id": "src_b",
+      "locator": "https://mirror.example/post",
+      "label": "ev_copy2",
+      "strength": "corroborating",
+      "observed_at": null,
+      "content_hash": "same_hash",
+      "document_id": "doc_copy2",
+      "source_type": "rss",
+      "canonical_url": "https://mirror.example/post",
+      "author": null,
+      "excerpt": "Одинаковый текст сообщения о событии.",
+      "published_at": null,
+      "fingerprint": "same_fp"
+    }
+  ],
+  "completeness": 1.0,
+  "review_completeness": 0.0,
+  "limitations": [
+    "Разные публикации не считаются независимыми без анализа lineage."
+  ],
+  "integrity_hash": "d219307cc7a7ea28fa2c3b3a7879014d8bfc885fd8bb87a871edc5e5488f6607"
+}

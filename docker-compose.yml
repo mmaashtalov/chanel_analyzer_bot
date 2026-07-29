@@ -27,6 +27,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       PORT: 8080
       PRODUCT_CONFIG_DIR: /data/config
+      PRODUCT_RUNTIME_DIR: /data/runtime
       REPORTS_DIR: /data/reports
       DATA_DIR: /data
       POSTGRES_HOST: db
