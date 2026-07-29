@@ -4,12 +4,12 @@
   "package_version": "0.24.0",
   "canonical_archive": {
     "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-    "size": 383156,
-    "sha256": "80f64dd1c91f4cd6d3dfd8a7a556923b6ddee5314e1921dd3a659934f1e58f3e"
+    "size": 408562,
+    "sha256": "f63b26b5214e5f0dd9a217f2b913bf9f494151167db72bcea41b1beb9305d6f6"
   },
   "tests": "128/128",
   "test_count": 128,
-  "file_count": 238,
+  "file_count": 239,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -923,6 +923,11 @@
       "sha256": "afbe0865cf475de5c75f5bdc014fd3450c9b1469c576176792ab65c50cd46a97"
     },
     {
+      "path": "emulator/emulator-v4.gz",
+      "size": 23039,
+      "sha256": "3e7301f210ac04457ad9a4570d6a024dcf9193d9aaa3651d4916c28ce155e956"
+    },
+    {
       "path": "emulator/index.html",
       "size": 802,
       "sha256": "9f8a27c8525bd55ab9aa3deed3eb9348f19c32813553b9c0a4b13fca26485441"
@@ -949,8 +954,8 @@
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-      "size": 383156,
-      "sha256": "80f64dd1c91f4cd6d3dfd8a7a556923b6ddee5314e1921dd3a659934f1e58f3e"
+      "size": 408562,
+      "sha256": "f63b26b5214e5f0dd9a217f2b913bf9f494151167db72bcea41b1beb9305d6f6"
     },
     {
       "path": "render.yaml",
@@ -990,7 +995,7 @@
     {
       "path": "scripts/project_preflight.py",
       "size": 6935,
-      "sha256": "daf2af7bc73c73b6c6362c35dc2fdb9e69eb85049c3b292ac7a0d83d0bd475c5"
+      "sha256": "b06bead38f6564f3a9d40eca1ae2b8c5d29af8e7fe677ecac930f024d2dfd11e"
     },
     {
       "path": "scripts/recover_source_overlay.py",

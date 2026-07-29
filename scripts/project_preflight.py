@@ -12,7 +12,7 @@ from generate_manifest import build_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_REPOSITORY = "mmaashtalov/chanel_analyzer_bot"
-EXPECTED_ARCHIVE_HASH = "80f64dd1c91f4cd6d3dfd8a7a556923b6ddee5314e1921dd3a659934f1e58f3e"
+EXPECTED_ARCHIVE_HASH = "f63b26b5214e5f0dd9a217f2b913bf9f494151167db72bcea41b1beb9305d6f6"
 EXPECTED_PACKAGE_VERSION = "0.24.0"
 REQUIRED_FILES = (
     ".dockerignore",
