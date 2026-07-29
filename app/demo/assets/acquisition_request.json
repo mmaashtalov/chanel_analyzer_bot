@@ -1,0 +1,27 @@
+{
+  "sprint": 17,
+  "version": "0.18.0",
+  "request": {
+    "id": "demo-request-001",
+    "workspace_id": "demo-workspace",
+    "claim_id": "claim_demo",
+    "status": "partial",
+    "priority": "high",
+    "gap_codes": ["no_primary_document", "single_source_type"],
+    "query_terms": ["ростех", "испытания", "бпла"],
+    "source_plan": [
+      {"source_type": "telegram", "source_id": "opk_monitor", "reason": "workspace channel"},
+      {"source_type": "rss", "source_id": "https://example.org/rss", "reason": "workspace rss"}
+    ],
+    "attempts": 1,
+    "max_attempts": 3,
+    "documents_collected": 2,
+    "documents_linked": 1
+  },
+  "lifecycle": ["queued", "linking", "partial"],
+  "methodology": "evidence-acquisition-v1",
+  "limitations": [
+    "Sprint 17 сначала использует локальное хранилище и не выполняет неограниченный внешний сбор.",
+    "Controlled external acquisition worker перенесён в Sprint 18 после Architecture Review."
+  ]
+}

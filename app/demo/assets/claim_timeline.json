@@ -1,0 +1,100 @@
+{
+  "workspace_id": "demo-workspace",
+  "methodology_version": "temporal-claims-v1",
+  "identity_count": 2,
+  "claim_count": 5,
+  "relation_count": 3,
+  "integrity_hash": "9d8de9b4a8c2c38cf0128947eefbba744e1fd1b4c93cde86b68013847edcd9fe",
+  "identities": [
+    {
+      "claim_identity_id": "cid_activity_demo",
+      "category": "activity",
+      "canonical_statement": "Объём публикаций вырос на 55%.",
+      "timeline": [
+        {
+          "claim_id": "claim-a1",
+          "bundle_id": "bundle-1",
+          "generated_at": "2026-07-01T09:00:00+00:00",
+          "statement": "Объём публикаций вырос на 55%.",
+          "assessment": "Интенсивность информационной активности увеличилась.",
+          "confidence": 0.88,
+          "review_status": "verified",
+          "temporal_status": "superseded",
+          "relation_from_previous": null
+        },
+        {
+          "claim_id": "claim-a2",
+          "bundle_id": "bundle-2",
+          "generated_at": "2026-07-08T09:00:00+00:00",
+          "statement": "Объём публикаций вырос на 80%.",
+          "assessment": "Рост продолжился.",
+          "confidence": 0.91,
+          "review_status": "verified",
+          "temporal_status": "superseded",
+          "relation_from_previous": {
+            "from_claim_id": "claim-a1",
+            "type": "updates",
+            "confidence": 0.91,
+            "rationale": [
+              "numeric_value_changed"
+            ]
+          }
+        },
+        {
+          "claim_id": "claim-a3",
+          "bundle_id": "bundle-3",
+          "generated_at": "2026-07-15T09:00:00+00:00",
+          "statement": "Наблюдается снижение активности.",
+          "assessment": "Направление динамики изменилось.",
+          "confidence": 0.84,
+          "review_status": "partially_verified",
+          "temporal_status": "contradicted",
+          "relation_from_previous": {
+            "from_claim_id": "claim-a2",
+            "type": "contradicts",
+            "confidence": 0.76,
+            "rationale": [
+              "semantic_direction_changed"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "claim_identity_id": "cid_alerts_demo",
+      "category": "alerts",
+      "canonical_statement": "Количество High/Critical сигналов увеличилось.",
+      "timeline": [
+        {
+          "claim_id": "claim-b1",
+          "bundle_id": "bundle-1",
+          "generated_at": "2026-07-01T09:00:00+00:00",
+          "statement": "Количество High/Critical сигналов увеличилось.",
+          "assessment": "Требуется проверка первичных публикаций.",
+          "confidence": 0.9,
+          "review_status": "verified",
+          "temporal_status": "superseded",
+          "relation_from_previous": null
+        },
+        {
+          "claim_id": "claim-b2",
+          "bundle_id": "bundle-2",
+          "generated_at": "2026-07-08T09:00:00+00:00",
+          "statement": "Количество High/Critical сигналов увеличилось.",
+          "assessment": "Наблюдение повторно подтверждено.",
+          "confidence": 0.93,
+          "review_status": "verified",
+          "temporal_status": "current",
+          "relation_from_previous": {
+            "from_claim_id": "claim-b1",
+            "type": "supports",
+            "confidence": 0.98,
+            "rationale": [
+              "same_assertion_reobserved"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
