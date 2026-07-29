@@ -62,6 +62,7 @@ jobs:
           app/db/url.py
           app/db/session.py
           alembic/env.py
+          alembic/versions/0014_controlled_external_acquisition.py
           tests/test_database_url.py
           scripts/generate_manifest.py
           scripts/project_preflight.py
