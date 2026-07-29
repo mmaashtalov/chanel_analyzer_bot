@@ -1,15 +1,15 @@
 {
   "schema": 2,
-  "version": "0.23.0-product",
-  "package_version": "0.23.0",
+  "version": "0.24.0-product",
+  "package_version": "0.24.0",
   "canonical_archive": {
-    "path": "release/chanel_analyzer_bot_product_v0_23_0.tar.gz",
-    "size": 374919,
-    "sha256": "83aa8d290c1793b549e686b72588054c2a7b2e1e2e4d2ccd226df2032e319368"
+    "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
+    "size": 383762,
+    "sha256": "ff237057db5fcc25f47de886eec80cb3801f31f41e3e4abbe18bcc447a3d01c3"
   },
-  "tests": "117/117",
-  "test_count": 117,
-  "file_count": 229,
+  "tests": "125/125",
+  "test_count": 125,
+  "file_count": 236,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -19,8 +19,8 @@
     },
     {
       "path": ".env.example",
-      "size": 600,
-      "sha256": "5e55cf8213a292010d99404dac7dd6cf89df3e5e70818d91409ca0e35502ab89"
+      "size": 634,
+      "sha256": "8ef907b6e79968bf3b93c78939a0b7fa6751ec915ac210b263bc13f10fa10f9b"
     },
     {
       "path": ".github/workflows/ci.yml",
@@ -39,13 +39,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 12024,
-      "sha256": "10dbdb9350555f4061abc8e40bff6b5bc275bdd780925d0128cf375147a2fb92"
+      "size": 12820,
+      "sha256": "8b08416a2e7d7056246964dff02e1f9fc19f04b655e1e8feb882d0be4aaad7bf"
     },
     {
       "path": "Dockerfile",
-      "size": 873,
-      "sha256": "9137a7852d92ec5a7cfd3c7bee79aed9a669dadcaa1974c72183a1459feb0697"
+      "size": 913,
+      "sha256": "dbb55ad516bd9858029ad6ff9e01ddd22271da79fd2817f0358c27e091b318c7"
     },
     {
       "path": "PROJECT_GOVERNANCE.md",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "size": 5400,
-      "sha256": "5f9921e3b4e99f1c05def6857b35e9adcd3eca6aa55ff4a34c659a9c0389a401"
+      "size": 6688,
+      "sha256": "b6621f2a9f7412242fbb9d26c6d7f29870de5dc48ccfc91092934f8b0ac618ca"
     },
     {
       "path": "RECOVERY_DIAGNOSTIC.txt",
@@ -194,8 +194,8 @@
     },
     {
       "path": "app/application/acquire_evidence.py",
-      "size": 4211,
-      "sha256": "cf1a6790cd8e03ee5853ccb5466fbe8806c9a92ed27e88309139b4d60df69cd0"
+      "size": 4259,
+      "sha256": "298be5293d77eca7bddaf89e6a48c1550707fb5e59e6bafc95f7a5d30317d928"
     },
     {
       "path": "app/application/analyze_channel.py",
@@ -254,8 +254,8 @@
     },
     {
       "path": "app/bot/handlers.py",
-      "size": 53119,
-      "sha256": "218b8f6ce0a66d3ba0aa4ad88a0ec0762e83b12174ed77b2ba380b1922e0c6fe"
+      "size": 53128,
+      "sha256": "f4534a4aa378d9df8dd6283c1f1a6cba6cbdab5aa5468f14f5d9f7772eff987e"
     },
     {
       "path": "app/collection/__init__.py",
@@ -291,6 +291,11 @@
       "path": "app/core/logging.py",
       "size": 549,
       "sha256": "c26df34f0396cf49af49786a3e129f9b0d7ba1a94ad223d4d93f3c12820f1874"
+    },
+    {
+      "path": "app/core/runtime.py",
+      "size": 7322,
+      "sha256": "84719e8a7ffaa658054e4d6f34112d977ef5f99490b589c6d8d9b6c1ea67ad28"
     },
     {
       "path": "app/db/__init__.py",
@@ -430,7 +435,7 @@
     {
       "path": "app/demo/server.py",
       "size": 18306,
-      "sha256": "7bd217a2c679377aa652221fd853c554d892cbf4020808358ca2c0983578816a"
+      "sha256": "9ab2f1aaa525f7a62eb90d34ac046e97b4c94395faf7136e064dd8f4fbfdc50f"
     },
     {
       "path": "app/domain/__init__.py",
@@ -534,8 +539,8 @@
     },
     {
       "path": "app/main.py",
-      "size": 12984,
-      "sha256": "95a6443e22f4d3f44eaeedad9dab3a0abbc25b0a1952f723f864f77225bf7519"
+      "size": 20868,
+      "sha256": "690fea19b7007eb86e38e8b317868dd8951b787bb8b6f87fbc4425a70877189e"
     },
     {
       "path": "app/monitoring/__init__.py",
@@ -654,8 +659,8 @@
     },
     {
       "path": "app/setup/control_center.html",
-      "size": 12868,
-      "sha256": "9079b071debc1cd6595efe970cdb39093f2b05dae6657ab26fc8dfe553acc95b"
+      "size": 13282,
+      "sha256": "eea6472ced4cb6eed0e790caaeab1bbdd6d46012114e950707eacf0b9b4586fa"
     },
     {
       "path": "app/setup/mobile.py",
@@ -665,12 +670,12 @@
     {
       "path": "app/setup/secure_proxy.py",
       "size": 9535,
-      "sha256": "d4bd82971a415968e05a8d9545f6d6e36a5389a534fe5fa1f642ee177b814784"
+      "sha256": "84521fd686f5c2ce63b6605c383a8fa5fdf914628110f3ff39364af7f9e56b56"
     },
     {
       "path": "app/setup/server.py",
-      "size": 42236,
-      "sha256": "94c84cf8ecfcf67ddbbf805f1e2bb1878018afa7afc6f99165868a590f145770"
+      "size": 54511,
+      "sha256": "7ab44bd1c9c5d361b7361d0775021298144724b17fad79ee083488c0ce67a577"
     },
     {
       "path": "app/similarity/__init__.py",
@@ -744,13 +749,13 @@
     },
     {
       "path": "app/workers/evidence_acquisition.py",
-      "size": 1400,
-      "sha256": "b03fc5c5d4df9b0ef7e594608de4fe313ecff116ff70145923e0b82be809a051"
+      "size": 1619,
+      "sha256": "1bed14018d728ea2bd94ec0f97dec439fea5c278f8019d173e9421bec59b3913"
     },
     {
       "path": "app/workers/monitoring.py",
-      "size": 2237,
-      "sha256": "2dc785bc8879a7b811fe313f8f3ee14b96bea5d5346d9b4e51e22e7f36fbdd31"
+      "size": 2455,
+      "sha256": "3a2d9ecba31c798b25fab38680c93384b420bc72d03f2cbbc604be7d2fd459e5"
     },
     {
       "path": "app/workspace_evolution/__init__.py",
@@ -804,8 +809,8 @@
     },
     {
       "path": "docker-compose.yml",
-      "size": 1721,
-      "sha256": "38a85fa6dd98b56d1aa0412779e03ee4e5dc2aeae448e735a3e16a0e4dd2040b"
+      "size": 1762,
+      "sha256": "ebfcbc1ed83e303e0c69fa5975a8eaba20e35d0ce367f42a7b74788c85d3883a"
     },
     {
       "path": "docs/ARCHITECTURE_REVIEW_SPRINT16.md",
@@ -821,6 +826,11 @@
       "path": "docs/ARCHITECTURE_REVIEW_SPRINT21.md",
       "size": 658,
       "sha256": "0455fdbc2201b71a807d13dacbf412003db15a45be78613095fee45ea0f51ad7"
+    },
+    {
+      "path": "docs/ARCHITECTURE_REVIEW_SPRINT24.md",
+      "size": 2536,
+      "sha256": "529f39d45f247f2fc2d9a2e746ec4985a6232b9c900ebb534bb2b6934efc7c0e"
     },
     {
       "path": "docs/ARCHITECTURE_REVIEW_SPRINT_18.md",
@@ -849,8 +859,8 @@
     },
     {
       "path": "docs/PRODUCT_RUNBOOK.md",
-      "size": 2284,
-      "sha256": "3d70fc9f1fdd0a2ba42b515c35e07029f9ebd8a00e07d15c85f347a457f16356"
+      "size": 3234,
+      "sha256": "b42e3859631c1f2e2aa8bdd45710540c2711e9b90af526444760f6c3c7e30579"
     },
     {
       "path": "docs/SPRINT16_REPORT.md",
@@ -881,6 +891,11 @@
       "path": "docs/SPRINT23_REPORT.md",
       "size": 2535,
       "sha256": "ca7676349f53a098a0ae1a4f81f5740fa02d032842a91821cd9d5bc6c11731b1"
+    },
+    {
+      "path": "docs/SPRINT24_REPORT.md",
+      "size": 2096,
+      "sha256": "f2a5748b3be1ae6cefa0bc3d262cbbe37dc46117cf8999cb5afd3315cec18c1a"
     },
     {
       "path": "docs/SPRINT_17_REPORT.md",
@@ -915,7 +930,7 @@
     {
       "path": "pyproject.toml",
       "size": 887,
-      "sha256": "9397995be3bd51743e702c918880d5cd75b0c1401c48b34f4cc563cb93ceefee"
+      "sha256": "bad6bf9798b42f29acbc7275bad01d4a26ca089022c003ba61dc9232015b4e9f"
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_22_0.tar.gz",
@@ -928,9 +943,19 @@
       "sha256": "83aa8d290c1793b549e686b72588054c2a7b2e1e2e4d2ccd226df2032e319368"
     },
     {
+      "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
+      "size": 383762,
+      "sha256": "ff237057db5fcc25f47de886eec80cb3801f31f41e3e4abbe18bcc447a3d01c3"
+    },
+    {
       "path": "render.yaml",
-      "size": 642,
-      "sha256": "acd70fe33c806f4c6b0bffc60bccb9136e331e19a3f893290731eb91c7fd0b14"
+      "size": 696,
+      "sha256": "cb8c9e09ea14c0c5268a8994347a72c516681c9f0378bfc2177ec1ad377e78ea"
+    },
+    {
+      "path": "scripts/build_release_archive.py",
+      "size": 3225,
+      "sha256": "c611db1d0dff94ee8ab40eef6badac9225c891c9f8f222b811d789cb5c599cb2"
     },
     {
       "path": "scripts/create_telethon_session.py",
@@ -940,7 +965,7 @@
     {
       "path": "scripts/generate_manifest.py",
       "size": 4010,
-      "sha256": "023465c13138ed9349a8d8ba8147d39202a66819cc49921a40bff36bcef0c3b0"
+      "sha256": "56c380b52ab7f966c50b47a0db7d82bd9f5fb0925b79ff0cb677cc04ec7f7deb"
     },
     {
       "path": "scripts/materialize_source.py",
@@ -960,7 +985,7 @@
     {
       "path": "scripts/project_preflight.py",
       "size": 5269,
-      "sha256": "1b0cd089b6e699b4fb95c0942f43ea500f9a2e2864f24620174230f86aab9df2"
+      "sha256": "9495ee4b2aae9d27fe08775c7e13ac07132d16c50c35e296306272496e138280"
     },
     {
       "path": "scripts/recover_source_overlay.py",
@@ -980,7 +1005,7 @@
     {
       "path": "telegram_intelligence_demo_standalone.html",
       "size": 30598,
-      "sha256": "9711372831cb68764a29ac16fc4ae4b43a8392447ca4bdc075bb971218a82e5b"
+      "sha256": "699aaa250304b2a5e4290fc86dea57e724b55604695c1bce0b0403885bd41bab"
     },
     {
       "path": "tests/fakes.py",
@@ -1093,9 +1118,19 @@
       "sha256": "2eedfdaf1addc3a10a1d878cecdeb09d482cfc8548d93c26fdde5d6e85145381"
     },
     {
+      "path": "tests/test_release_archive.py",
+      "size": 905,
+      "sha256": "b696c85d877e03510198153e1d5a004a7077e065588bdead3910c176c2c88717"
+    },
+    {
       "path": "tests/test_report.py",
       "size": 593,
       "sha256": "911429d11bbb9aaf7bf52a9e3ca7c1d93b9c828c12fdd4e8a4d24a0a9e7944fe"
+    },
+    {
+      "path": "tests/test_runtime_reliability.py",
+      "size": 5839,
+      "sha256": "4feb3dae62f6f10b74da7f0cfb88f57a50da9fb1d42e4e6d3f97fc514084ebfa"
     },
     {
       "path": "tests/test_safe_fetch.py",

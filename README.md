@@ -1,6 +1,6 @@
-# Chanel Analyzer Bot — Product Release 0.23.0
+# Chanel Analyzer Bot — Product Release 0.24.0
 
-Готовая Telegram-first OSINT / Intelligence платформа с Control Center и встроенным эмулятором.
+Готовая Telegram-first OSINT / Intelligence платформа. Аналитическая работа выполняется в Telegram; Control Center остаётся только owner-контуром развёртывания и восстановления.
 
 ## Запуск владельцем с телефона
 
@@ -63,6 +63,14 @@ docker compose up -d --build
 
 Control Center сохраняет operation state в постоянном `/data` volume. Поэтому после рестарта хостинга владелец видит фактический статус коллектора, последнюю миграцию, последнюю ошибку и историю операций.
 
+## Надёжность пилота
+
+- Production runtime пишет secret-free heartbeat в `/data/runtime/runtime-health.json`; owner-контур отличает живой Telegram polling от одного только PID процесса.
+- `SIGTERM` переводит бот в корректное завершение: останавливаются updater и workers, закрываются источники и соединения БД.
+- При неожиданном выходе дочернего процесса Control Center делает до трёх автоматических перезапусков за 15 минут с backoff `5 → 15 → 45` секунд.
+- После исчерпания лимита включается защита от crash-loop: новый запуск выполняется только вручную, причина видна в Diagnostics.
+- Статусы `runtime=stale/error` означают, что PID сам по себе не считается подтверждением работоспособности; требуется проверить owner Diagnostics.
+
 Доступны owner-защищённые операции:
 
 - `/api/credentials/check` — статическая проверка обязательных полей без Telegram RPC;
@@ -73,11 +81,11 @@ Control Center сохраняет operation state в постоянном `/data
 
 ## Формат репозитория
 
-Проверенный продукт хранится в `release/chanel_analyzer_bot_product_v0_23_0.tar.gz`. Dockerfile собирает текущее дерево репозитория напрямую.
+Проверенный продукт хранится в `release/chanel_analyzer_bot_product_v0_24_0.tar.gz`. Dockerfile собирает текущее дерево репозитория напрямую.
 
 SHA-256 релиза фиксируется в `MANIFEST.json` после воспроизводимой сборки архива.
 
-Версия: `0.23.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
+Версия: `0.24.0-product`. Regression-счётчик вычисляется из `MANIFEST.json`.
 
 <!-- production-owner-gate -->
 ## Запуск с телефона

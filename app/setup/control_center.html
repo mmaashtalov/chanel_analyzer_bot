@@ -44,7 +44,7 @@
 <body>
 <main class="wrap">
   <section class="hero">
-    <div class="eyebrow">v0.23.0 · Mobile Operations</div>
+    <div class="eyebrow">v0.24.0 · Pilot Reliability</div>
     <h1>Telegram Intelligence</h1>
     <p class="muted">Владелец проходит весь операционный путь со смартфона: Deploy → Setup → Migrations → Start → Analyze. SSH и локальный Docker после развёртывания не нужны.</p>
     <div class="notice small">Секреты передаются только в защищённый owner-контур, не возвращаются в статусе и не записываются в журнал событий.</div>
@@ -143,15 +143,18 @@ function renderChecks(target, payload) {
 async function refresh() {
   try {
     const status = await api('/api/status');
-    $('state').textContent = status.status === 'running' ? 'Продукт работает' : status.status === 'error' ? 'Требуется внимание' : 'Продукт остановлен';
-    $('dot').className = `dot ${status.status === 'running' ? 'running' : status.status === 'error' ? 'ready' : ''}`;
+    const runtime = status.runtime || {};
+    const recovery = status.recovery || {};
+    const active = ['running', 'degraded'].includes(status.status);
+    $('state').textContent = status.status === 'running' ? 'Продукт работает' : status.status === 'degraded' || status.status === 'error' ? 'Требуется внимание' : 'Продукт остановлен';
+    $('dot').className = `dot ${status.status === 'running' ? 'running' : status.status === 'degraded' || status.status === 'error' ? 'ready' : ''}`;
     const cfg = status.config || {};
     if (cfg.telegram_api_id != null) $('telegram_api_id').value = cfg.telegram_api_id;
     if (cfg.analysis_lookback_days != null) $('analysis_lookback_days').value = cfg.analysis_lookback_days;
     if (cfg.analysis_max_posts != null) $('analysis_max_posts').value = cfg.analysis_max_posts;
     if (cfg.log_level != null) $('log_level').value = cfg.log_level;
-    $('summary').textContent = `Конфигурация: ${status.configured ? 'готова' : 'не готова'} · Миграции: ${(status.migration || {}).status || 'не запускались'} · Эмулятор: ${status.emulator_ready ? 'готов' : 'ошибка'}`;
-    $('operation').textContent = JSON.stringify({collector: status.collector, operation: status.operation, last_error: status.last_error, database: cfg.database_url_masked || (cfg.database_url_configured ? 'configured' : 'not configured')}, null, 2);
+    $('summary').textContent = `Конфигурация: ${status.configured ? 'готова' : 'не готова'} · Runtime: ${runtime.status || 'неизвестен'} · ${recovery.suppressed ? 'автовосстановление остановлено' : recovery.next_retry_epoch ? 'запланировано автовосстановление' : active ? 'контур наблюдения активен' : 'продукт остановлен'}`;
+    $('operation').textContent = JSON.stringify({collector: status.collector, runtime, recovery, operation: status.operation, last_error: status.last_error, database: cfg.database_url_masked || (cfg.database_url_configured ? 'configured' : 'not configured')}, null, 2);
     $('events').textContent = (status.events || []).map(item => `${item.at} · ${item.message}`).join('\n');
   } catch (error) { $('summary').textContent = error.message; }
 }

@@ -3,6 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MPLCONFIGDIR=/tmp/matplotlib \
     PRODUCT_CONFIG_DIR=/data/config \
+    PRODUCT_RUNTIME_DIR=/data/runtime \
     REPORTS_DIR=/data/reports \
     DATA_DIR=/data \
     PORT=8080 \

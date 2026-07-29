@@ -31,7 +31,7 @@ EXCLUDED_DIRECTORY_NAMES = {
     "venv",
 }
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
-CANONICAL_ARCHIVE = "release/chanel_analyzer_bot_product_v0_23_0.tar.gz"
+CANONICAL_ARCHIVE = "release/chanel_analyzer_bot_product_v0_24_0.tar.gz"
 
 
 def iter_project_files() -> Iterator[tuple[str, Path]]:

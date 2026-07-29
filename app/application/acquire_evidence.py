@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Protocol
+
 from app.application.review_claims import ReviewClaimsUseCase
 from app.db.evidence_request_repository import EvidenceRequestRepository
 from app.db.workspace_repository import WorkspaceRepository
@@ -10,7 +12,7 @@ from app.evidence.acquisition import (
 )
 
 
-class ExternalRunner:
+class ExternalRunner(Protocol):
     async def run_owned(self, user_id: int, request_id: str) -> dict: ...
 
 
@@ -44,7 +46,7 @@ class AcquireEvidenceUseCase:
         plan = build_contradiction_request_plan(workspace, contradiction)
         return await self._requests.create(workspace_id, user_id, plan)
 
-    async def list(self, user_id: int, workspace_id: str | None = None) -> list[dict]:
+    async def list_requests(self, user_id: int, workspace_id: str | None = None) -> list[dict]:
         if workspace_id is not None and await self._workspaces.get(user_id, workspace_id) is None:
             raise LookupError("Workspace не найден")
         return await self._requests.list_owned(user_id, workspace_id)

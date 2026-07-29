@@ -17,8 +17,13 @@ class MonitoringWorker:
         self._task: asyncio.Task | None = None
 
     async def start(self) -> None:
-        if self._task is None:
-            self._task = asyncio.create_task(self._loop(), name="monitoring-worker")
+        if self._task is not None and not self._task.done():
+            return
+        self._task = asyncio.create_task(self._loop(), name="monitoring-worker")
+
+    @property
+    def is_running(self) -> bool:
+        return self._task is not None and not self._task.done()
 
     async def stop(self) -> None:
         if self._task is None:
@@ -45,7 +50,7 @@ class MonitoringWorker:
                         try:
                             message = await self._bot.send_message(chat_id=watch.chat_id, text=text)
                             await self._repository.mark_delivered(alert.fingerprint, watch.id, watch.chat_id, message.message_id)
-                        except Exception as exc:
+                        except Exception as exc:  # noqa: BLE001 - delivery failure is persisted and retried
                             await self._repository.mark_delivery_failed(alert.fingerprint, watch.id, watch.chat_id, str(exc))
             except asyncio.CancelledError:
                 raise

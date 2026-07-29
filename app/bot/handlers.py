@@ -889,7 +889,7 @@ def build_handlers(
             return
         try:
             workspace_id = context.args[0] if context.args else None
-            records = await acquire_evidence_use_case.list(user.id, workspace_id)
+            records = await acquire_evidence_use_case.list_requests(user.id, workspace_id)
             if not records:
                 await message.reply_text("Evidence requests отсутствуют.")
                 return

@@ -17,6 +17,11 @@ from pathlib import Path
 from typing import Any, TextIO
 from urllib.parse import unquote, urlparse
 
+from app.core.runtime import (
+    DEFAULT_FRESHNESS_SECONDS,
+    inspect_runtime_health,
+    load_runtime_health,
+)
 from app.demo.server import ASSET_DIR, build_summary, run_self_test
 from app.demo.server import HTML as DEMO_HTML
 from app.setup.mobile import (
@@ -32,13 +37,20 @@ from app.setup.mobile import (
     verify_backup,
 )
 
-PRODUCT_VERSION = "0.23.0-product"
+PRODUCT_VERSION = "0.24.0-product"
 
 CONFIG_DIR = Path(os.getenv("PRODUCT_CONFIG_DIR", "/data/config"))
 CONFIG_FILE = CONFIG_DIR / "settings.json"
 LOG_FILE = CONFIG_DIR / "control-center.log"
+RUNTIME_DIR = Path(os.getenv("PRODUCT_RUNTIME_DIR", os.getenv("DATA_DIR", "/data")))
+if RUNTIME_DIR.name != "runtime":
+    RUNTIME_DIR /= "runtime"
 TOKEN_RE = re.compile(r"^\d{5,15}:[A-Za-z0-9_-]{20,}$")
 HASH_RE = re.compile(r"^[A-Fa-f0-9]{16,128}$")
+
+RECOVERY_MAX_ATTEMPTS = 3
+RECOVERY_WINDOW_SECONDS = 15 * 60
+RECOVERY_BACKOFF_SECONDS = (5, 15, 45)
 
 PUBLIC_FIELDS = {
     "app_env",
@@ -191,17 +203,33 @@ def _runtime_path(name: str) -> Path:
     return CONFIG_FILE.parent / name
 
 
+def _runtime_health_path() -> Path:
+    return RUNTIME_DIR / "runtime-health.json"
+
+
+def _recovery_default() -> dict[str, Any]:
+    return {
+        "attempts": [],
+        "next_retry_epoch": None,
+        "suppressed": False,
+        "last_reason": None,
+    }
+
+
 def _state_default() -> dict[str, Any]:
     return {
-        "schema": 1,
+        "schema": 2,
         "status": "stopped",
+        "desired_status": "stopped",
         "pid": None,
         "run_id": None,
         "started_at": None,
+        "runtime_deadline_epoch": None,
         "last_exit_code": None,
         "last_error": None,
         "last_operation": None,
         "migration": {"status": "not_run", "at": None, "output": ""},
+        "recovery": _recovery_default(),
     }
 
 
@@ -212,6 +240,11 @@ def _merge_state(payload: Any) -> dict[str, Any]:
         migration = payload.get("migration")
         if isinstance(migration, dict):
             state["migration"] = {**state["migration"], **migration}
+        recovery = payload.get("recovery")
+        if isinstance(recovery, dict):
+            state["recovery"] = {**state["recovery"], **recovery}
+        if "desired_status" not in payload and state.get("status") in {"running", "degraded"}:
+            state["desired_status"] = "running"
     return state
 
 
@@ -227,9 +260,12 @@ class ProductManager:
     events: list[dict[str, Any]] = field(default_factory=list)
     last_exit_code: int | None = None
     state: dict[str, Any] = field(default_factory=_state_default)
+    watchdog_interval_seconds: float = 3.0
+    _watchdog_stop: threading.Event = field(default_factory=threading.Event, init=False, repr=False)
+    _watchdog_thread: threading.Thread | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
-        global CONFIG_DIR, CONFIG_FILE, LOG_FILE
+        global CONFIG_DIR, CONFIG_FILE, LOG_FILE, RUNTIME_DIR
         try:
             CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
         except OSError:
@@ -238,11 +274,46 @@ class ProductManager:
             CONFIG_DIR = fallback_dir
             CONFIG_FILE = fallback_dir / "settings.json"
             LOG_FILE = fallback_dir / "control-center.log"
+            RUNTIME_DIR = fallback_dir.parent / "telegram-intelligence-runtime"
         self.state = _merge_state(load_json(_runtime_path("operation-state.json"), self.state))
         self.events = load_jsonl_tail(LOG_FILE, 100)
         self.last_exit_code = self.state.get("last_exit_code")
         self._reconcile_process()
         self.record("control_center_started", "Control Center запущен")
+
+    def start_watchdog(self) -> None:
+        """Start one lightweight supervisor for this Control Center process."""
+
+        with self.lock:
+            if self._watchdog_thread is not None and self._watchdog_thread.is_alive():
+                return
+            self._watchdog_stop.clear()
+            self._watchdog_thread = threading.Thread(
+                target=self._watchdog_loop,
+                name="product-runtime-watchdog",
+                daemon=True,
+            )
+            self._watchdog_thread.start()
+
+    def shutdown(self) -> None:
+        """Stop the supervisor before the Control Center process exits."""
+
+        self._watchdog_stop.set()
+        thread = self._watchdog_thread
+        if thread is not None and thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=max(2.0, self.watchdog_interval_seconds * 2))
+        self._watchdog_thread = None
+
+    def _watchdog_loop(self) -> None:
+        while not self._watchdog_stop.wait(max(1.0, self.watchdog_interval_seconds)):
+            try:
+                self.watchdog_tick()
+            except Exception as exc:  # noqa: BLE001 - watchdog must survive one failed check
+                self.record(
+                    "runtime_watchdog_failed",
+                    "Watchdog не смог проверить runtime",
+                    error_type=type(exc).__name__,
+                )
 
     def _persist_state(self) -> None:
         atomic_write_json(_runtime_path("operation-state.json"), self.state)
@@ -268,38 +339,88 @@ class ProductManager:
                 operation["error"] = error
         self._persist_state()
 
+    def _runtime_health(self) -> dict[str, Any]:
+        return inspect_runtime_health(load_runtime_health(_runtime_health_path()))
+
+    def _recovery(self) -> dict[str, Any]:
+        current = self.state.get("recovery")
+        if not isinstance(current, dict):
+            current = _recovery_default()
+            self.state["recovery"] = current
+        return current
+
+    def _reset_recovery(self) -> None:
+        self.state["recovery"] = _recovery_default()
+
+    def _clear_runtime_health(self) -> None:
+        try:
+            _runtime_health_path().unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    def _runtime_requires_attention(self, runtime: dict[str, Any]) -> bool:
+        status = runtime.get("status")
+        if status in {"stale", "error", "stopping", "stopped"}:
+            return True
+        if status != "unavailable":
+            return False
+        deadline = self.state.get("runtime_deadline_epoch")
+        try:
+            return deadline is not None and time.time() > float(deadline)
+        except (TypeError, ValueError):
+            return False
+
+    def _mark_live_process(self, pid: int) -> None:
+        runtime = self._runtime_health()
+        if self._runtime_requires_attention(runtime):
+            self.state["status"] = "degraded"
+            self.state["last_error"] = str(runtime.get("message") or "Runtime требует проверки")
+        else:
+            self.state["status"] = "running"
+            self.state["last_error"] = None
+        self.state["pid"] = pid
+        self._persist_state()
+
+    def _record_process_exit(self, return_code: int | None) -> None:
+        self.last_exit_code = return_code
+        self.state["pid"] = None
+        self.state["runtime_deadline_epoch"] = None
+        expected_stop = self.state.get("desired_status") != "running"
+        self.state["status"] = "stopped" if expected_stop and not return_code else "error"
+        self.state["last_exit_code"] = return_code
+        if not expected_stop:
+            self.state["last_error"] = (
+                f"Основной процесс завершился с кодом {return_code}"
+                if return_code is not None
+                else "Основной процесс завершился неожиданно"
+            )
+        operation = self.state.get("last_operation")
+        if isinstance(operation, dict) and operation.get("status") == "running":
+            self._finish_operation(
+                "error" if not expected_stop else "success",
+                self.state.get("last_error") if not expected_stop else None,
+            )
+        self._close_log()
+        self.process = None
+        self._persist_state()
+
     def _reconcile_process(self) -> None:
         if self.process is not None:
             return_code = self.process.poll()
             if return_code is None:
-                self.state["status"] = "running"
-                self.state["pid"] = self.process.pid
-                self._persist_state()
+                self._mark_live_process(self.process.pid)
                 return
-            self.last_exit_code = return_code
-            self.state["pid"] = None
-            self.state["status"] = "error" if return_code else "stopped"
-            self.state["last_exit_code"] = return_code
-            if return_code:
-                self.state["last_error"] = f"Основной процесс завершился с кодом {return_code}"
-            operation = self.state.get("last_operation")
-            if isinstance(operation, dict) and operation.get("status") == "running":
-                self._finish_operation(
-                    "error" if return_code else "success",
-                    self.state.get("last_error") if return_code else None,
-                )
-            self._close_log()
-            self.process = None
-            self._persist_state()
+            self._record_process_exit(return_code)
             return
 
         pid = self.state.get("pid")
         if pid and process_is_alive(int(pid), ("app.entrypoint", "app.main")):
-            self.state["status"] = "running"
+            self._mark_live_process(int(pid))
             return
-        if self.state.get("status") == "running":
+        if self.state.get("status") in {"running", "degraded"}:
             self.state["status"] = "error"
             self.state["pid"] = None
+            self.state["runtime_deadline_epoch"] = None
             self.state["last_error"] = "Процесс коллектора больше не обнаружен после перезапуска Control Center"
             operation = self.state.get("last_operation")
             if isinstance(operation, dict) and operation.get("status") == "running":
@@ -312,6 +433,157 @@ class ProductManager:
             return True
         pid = self.state.get("pid")
         return bool(pid and process_is_alive(int(pid), ("app.entrypoint", "app.main")))
+
+    def _schedule_recovery(self, reason: str) -> None:
+        """Schedule a bounded retry without blocking the Control Center thread."""
+
+        recovery = self._recovery()
+        if recovery.get("suppressed"):
+            return
+        now = time.time()
+        attempts: list[float] = []
+        for value in recovery.get("attempts", []):
+            try:
+                timestamp = float(value)
+            except (TypeError, ValueError):
+                continue
+            if timestamp >= now - RECOVERY_WINDOW_SECONDS:
+                attempts.append(timestamp)
+        recovery["attempts"] = attempts
+        recovery["last_reason"] = reason
+        if len(attempts) >= RECOVERY_MAX_ATTEMPTS:
+            recovery["suppressed"] = True
+            recovery["next_retry_epoch"] = None
+            self.state["status"] = "error"
+            self.state["last_error"] = (
+                "Автовосстановление остановлено: превышен лимит "
+                f"{RECOVERY_MAX_ATTEMPTS} попыток за {RECOVERY_WINDOW_SECONDS // 60} мин."
+            )
+            self._persist_state()
+            self.record(
+                "auto_recovery_suppressed",
+                "Автовосстановление остановлено защитой от crash-loop",
+                attempts=len(attempts),
+            )
+            return
+        delay = RECOVERY_BACKOFF_SECONDS[min(len(attempts), len(RECOVERY_BACKOFF_SECONDS) - 1)]
+        recovery["next_retry_epoch"] = now + delay
+        self._persist_state()
+        self.record(
+            "auto_recovery_scheduled",
+            "Запланировано автоматическое восстановление продукта",
+            delay_seconds=delay,
+            reason=reason,
+            attempt=len(attempts) + 1,
+        )
+
+    def _launch_product(self, config: dict[str, Any], operation_id: str, *, recovered: bool) -> None:
+        env = os.environ.copy()
+        env.update(config_to_env(config))
+        self._clear_runtime_health()
+        try:
+            self.log_handle = LOG_FILE.open("a", encoding="utf-8")
+            self.process = subprocess.Popen(
+                [sys.executable, "-m", "app.entrypoint"],
+                cwd=Path.cwd(),
+                env=env,
+                stdout=self.log_handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+                start_new_session=True,
+            )
+        except Exception as exc:
+            error = f"Не удалось запустить основной процесс: {type(exc).__name__}"
+            self._close_log()
+            self.process = None
+            self.state.update(
+                {
+                    "status": "error",
+                    "pid": None,
+                    "last_error": error,
+                    "runtime_deadline_epoch": None,
+                }
+            )
+            self._finish_operation("error", error)
+            self.record(
+                "product_start_failed",
+                "Не удалось запустить основной продукт",
+                operation_id=operation_id,
+                error_type=type(exc).__name__,
+            )
+            if recovered:
+                self._schedule_recovery(error)
+            raise
+
+        self.last_exit_code = None
+        self.state.update(
+            {
+                "status": "running",
+                "desired_status": "running",
+                "pid": self.process.pid,
+                "run_id": operation_id,
+                "started_at": utc_stamp(),
+                "runtime_deadline_epoch": time.time() + DEFAULT_FRESHNESS_SECONDS,
+                "last_exit_code": None,
+                "last_error": None,
+            }
+        )
+        self._persist_state()
+        self._finish_operation("success")
+        self.record(
+            "product_auto_recovered" if recovered else "product_started",
+            "Основной продукт автоматически перезапущен" if recovered else "Основной продукт запущен",
+            pid=self.process.pid,
+            operation_id=operation_id,
+        )
+
+    def _attempt_recovery(self) -> None:
+        recovery = self._recovery()
+        recovery["next_retry_epoch"] = None
+        attempts = list(recovery.get("attempts", []))
+        attempts.append(time.time())
+        recovery["attempts"] = attempts[-RECOVERY_MAX_ATTEMPTS:]
+        self._persist_state()
+        operation_id = self._record_operation("auto_recovery")
+        try:
+            config = validate_config({}, load_config())
+        except Exception as exc:  # noqa: BLE001 - invalid persisted config is a recoverable runtime fault
+            error = f"Автовосстановление не выполнилось: {type(exc).__name__}"
+            self.state.update({"status": "error", "last_error": error})
+            self._finish_operation("error", error)
+            self.record(
+                "auto_recovery_start_failed",
+                "Автовосстановление не смогло подготовить конфигурацию",
+                operation_id=operation_id,
+                error_type=type(exc).__name__,
+            )
+            self._schedule_recovery(error)
+            return
+        try:
+            self._launch_product(config, operation_id, recovered=True)
+        except Exception:  # noqa: BLE001 - _launch_product records a safe failure and next retry
+            # _launch_product stores a safe error and schedules the next retry.
+            return
+
+    def watchdog_tick(self) -> None:
+        """Reconcile state and recover only unexpected exits within a safe budget."""
+
+        with self.lock:
+            self._reconcile_process()
+            if self.state.get("desired_status") != "running" or self._is_running():
+                return
+            recovery = self._recovery()
+            if recovery.get("suppressed"):
+                return
+            next_retry = recovery.get("next_retry_epoch")
+            try:
+                retry_due = next_retry is not None and float(next_retry) <= time.time()
+            except (TypeError, ValueError):
+                retry_due = False
+            if next_retry is None:
+                self._schedule_recovery(str(self.state.get("last_error") or "runtime недоступен"))
+            elif retry_due:
+                self._attempt_recovery()
 
     def _close_log(self) -> None:
         if self.log_handle is not None:
@@ -410,6 +682,11 @@ class ProductManager:
             config = load_config()
             credentials = self.credential_check(config)
             process_status = self.state.get("status", "stopped")
+            runtime = self._runtime_health()
+            recovery = self._recovery()
+            recovery_attempts = [
+                value for value in recovery.get("attempts", []) if isinstance(value, (int, float))
+            ]
             return {
                 "status": process_status,
                 "pid": self.state.get("pid"),
@@ -420,8 +697,19 @@ class ProductManager:
                 "configuration": credentials,
                 "migration": self.state.get("migration"),
                 "operation": self.state.get("last_operation"),
+                "runtime": runtime,
+                "recovery": {
+                    "desired_status": self.state.get("desired_status", "stopped"),
+                    "attempt_count": len(recovery_attempts),
+                    "max_attempts": RECOVERY_MAX_ATTEMPTS,
+                    "window_seconds": RECOVERY_WINDOW_SECONDS,
+                    "next_retry_epoch": recovery.get("next_retry_epoch"),
+                    "suppressed": bool(recovery.get("suppressed")),
+                    "last_reason": recovery.get("last_reason"),
+                },
                 "collector": {
                     "status": process_status,
+                    "desired_status": self.state.get("desired_status", "stopped"),
                     "pid": self.state.get("pid"),
                     "last_error": self.state.get("last_error"),
                     "started_at": self.state.get("started_at"),
@@ -481,49 +769,20 @@ class ProductManager:
                 return self.status()
             config = validate_config({}, load_config())
             self.migrate()
+            self._reset_recovery()
+            self.state["desired_status"] = "running"
             operation_id = self._record_operation("start")
-            env = os.environ.copy()
-            env.update(config_to_env(config))
-            try:
-                self.log_handle = LOG_FILE.open("a", encoding="utf-8")
-                self.process = subprocess.Popen(
-                    [sys.executable, "-m", "app.entrypoint"],
-                    cwd=Path.cwd(),
-                    env=env,
-                    stdout=self.log_handle,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    start_new_session=True,
-                )
-                self.last_exit_code = None
-                self.state.update(
-                    {
-                        "status": "running",
-                        "pid": self.process.pid,
-                        "run_id": operation_id,
-                        "started_at": utc_stamp(),
-                        "last_exit_code": None,
-                        "last_error": None,
-                    }
-                )
-                self._persist_state()
-                self.record("product_started", "Основной продукт запущен", pid=self.process.pid, operation_id=operation_id)
-                time.sleep(0.25)
-                return self.status()
-            except Exception as exc:
-                error = str(exc)
-                self._close_log()
-                self.process = None
-                self.state.update({"status": "error", "pid": None, "last_error": error})
-                self._finish_operation("error", error)
-                self.record("product_start_failed", "Не удалось запустить основной продукт", operation_id=operation_id)
-                raise
+            self._launch_product(config, operation_id, recovered=False)
+            time.sleep(0.25)
+            return self.status()
 
     def _terminate_active_process(self) -> None:
         pid = self.process.pid if self.process is not None else self.state.get("pid")
         if not pid:
             return
         pid = int(pid)
+        if self.process is None and not process_is_alive(pid, ("app.entrypoint", "app.main")):
+            return
         try:
             os.killpg(pid, signal.SIGTERM)
         except (ProcessLookupError, PermissionError):
@@ -540,6 +799,9 @@ class ProductManager:
 
     def stop(self) -> dict[str, Any]:
         with self.lock:
+            self.state["desired_status"] = "stopped"
+            self._reset_recovery()
+            self._persist_state()
             was_running = self._is_running()
             operation_id = self._record_operation("stop")
             if was_running:
@@ -552,6 +814,7 @@ class ProductManager:
                     "status": "stopped",
                     "pid": None,
                     "run_id": None,
+                    "runtime_deadline_epoch": None,
                     "last_exit_code": self.last_exit_code,
                     "last_error": None,
                 }
@@ -607,14 +870,38 @@ class ProductManager:
             credentials = status["configuration"]
             storage_ok = CONFIG_FILE.parent.exists() and os.access(CONFIG_FILE.parent, os.W_OK)
             emulator = run_self_test()
+            runtime = status["runtime"]
+            runtime_ok = runtime["status"] in {"healthy", "stopped"} or (
+                status["status"] == "stopped" and runtime["status"] == "unavailable"
+            )
+            recovery = status["recovery"]
+            recovery_status = (
+                "error" if recovery["suppressed"]
+                else "attention" if recovery["next_retry_epoch"] is not None
+                else "ok"
+            )
             checks = {
                 "configuration": {"status": credentials["status"], "message": credentials["message"]},
                 "control_center_storage": {"status": "ok" if storage_ok else "error", "message": "volume доступен" if storage_ok else "нет записи в /data"},
                 "emulator": {"status": emulator["status"], "message": "demo-артефакты проверены" if emulator["status"] == "ok" else "demo-артефакты требуют проверки"},
                 "migration": {"status": status["migration"].get("status", "not_run"), "message": "последняя миграция применена" if status["migration"].get("status") == "applied" else "миграции ещё не подтверждены"},
                 "collector": {"status": status["status"], "message": status["last_error"] or "состояние процесса определено"},
+                "runtime": {
+                    "status": "ok" if runtime_ok else "attention",
+                    "message": runtime["message"],
+                },
+                "auto_recovery": {
+                    "status": recovery_status,
+                    "message": (
+                        "Защита от crash-loop активирована; требуется ручной запуск"
+                        if recovery["suppressed"]
+                        else "Запланирована попытка автоматического восстановления"
+                        if recovery["next_retry_epoch"] is not None
+                        else "Автовосстановление готово"
+                    ),
+                },
             }
-            failed = [key for key, value in checks.items() if value["status"] in {"error", "failed"}]
+            failed = [key for key, value in checks.items() if value["status"] != "ok"]
             recent_errors = [
                 item for item in self.events
                 if "fail" in str(item.get("event", "")).lower() or "error" in str(item.get("event", "")).lower()
@@ -631,15 +918,17 @@ class ProductManager:
     def update_check(self) -> dict[str, Any]:
         current = self.status()
         backup_files = list(_runtime_path("backups").glob("*.json")) if _runtime_path("backups").exists() else []
+        running = current["status"] in {"running", "degraded"}
         return {
             "status": "ok",
             "version": PRODUCT_VERSION,
             "python": platform.python_version(),
             "source_revision": os.getenv("RELEASE_SHA") or os.getenv("GIT_SHA") or "не задан",
-            "safe_to_prepare": current["status"] != "running",
-            "running": current["status"] == "running",
+            "safe_to_prepare": not running,
+            "running": running,
+            "runtime_status": current["runtime"]["status"],
             "backup_count": len(backup_files),
-            "message": "Можно подготовить безопасное обновление" if current["status"] != "running" else "Перед обновлением остановите продукт",
+            "message": "Можно подготовить безопасное обновление" if not running else "Перед обновлением остановите продукт",
         }
 
     def prepare_update(self) -> dict[str, Any]:
@@ -662,7 +951,7 @@ MANAGER = ProductManager()
 
 SETUP_HTML = r'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Telegram Intelligence Control Center</title><style>
 :root{--bg:#07111f;--card:#0e1b2d;--line:#21334a;--text:#e9f1fb;--muted:#91a3ba;--accent:#54e1b4;--warn:#ffc857;--bad:#ff6b7a}*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#07111f,#0b1730);color:var(--text);font:15px system-ui,sans-serif}.wrap{max-width:1120px;margin:auto;padding:24px}.hero{padding:20px 0 10px}.hero h1{font-size:clamp(28px,6vw,52px);margin:8px 0}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:rgba(14,27,45,.94);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 15px 40px #0004}.full{grid-column:1/-1}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.tab,button,.btn{border:0;border-radius:11px;padding:11px 15px;font-weight:700;cursor:pointer;background:var(--accent);color:#062116;text-decoration:none}.tab.secondary,button.secondary,.btn.secondary{background:#162943;color:var(--text);border:1px solid var(--line)}label{display:block;margin:12px 0 5px;color:#b9c8da}input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#081522;color:var(--text)}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.status{display:flex;gap:10px;align-items:center}.dot{width:10px;height:10px;border-radius:50%;background:var(--bad)}.dot.running{background:var(--accent);box-shadow:0 0 14px var(--accent)}pre{white-space:pre-wrap;background:#06101c;border-radius:12px;padding:12px;max-height:300px;overflow:auto}.hidden{display:none}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.notice{padding:12px;border-radius:10px;background:#102640;border:1px solid var(--line)}iframe{width:100%;min-height:760px;border:1px solid var(--line);border-radius:14px;background:white}@media(max-width:760px){.grid,.row{grid-template-columns:1fr}.wrap{padding:14px}}
-</style></head><body><main class="wrap"><section class="hero"><div class="muted">v0.23.0 · Product Control Center</div><h1>Telegram Intelligence Platform</h1><p class="muted">Введите ключи один раз, примените миграции и запустите продукт. Эмулятор работает отдельно и не требует секретов.</p></section><div class="tabs"><button class="tab" onclick="show('setup')">Настройка</button><button class="tab secondary" onclick="show('emulator')">Эмулятор</button></div>
+</style></head><body><main class="wrap"><section class="hero"><div class="muted">v0.24.0 · Product Control Center</div><h1>Telegram Intelligence Platform</h1><p class="muted">Введите ключи один раз, примените миграции и запустите продукт. Эмулятор работает отдельно и не требует секретов.</p></section><div class="tabs"><button class="tab" onclick="show('setup')">Настройка</button><button class="tab secondary" onclick="show('emulator')">Эмулятор</button></div>
 <section id="setup"><div class="grid"><article class="card"><h2>1. Доступы Telegram</h2><label>Bot Token</label><input id="telegram_bot_token" type="password" placeholder="123456:ABC..."><div class="row"><div><label>API ID</label><input id="telegram_api_id" inputmode="numeric"></div><div><label>API Hash</label><input id="telegram_api_hash" type="password"></div></div><label>String Session (опционально)</label><input id="telegram_string_session" type="password"><div class="notice muted" style="margin-top:12px">Секреты сохраняются только в mounted volume <code>/data/config</code> с правами 0600 и никогда не возвращаются через API.</div></article>
 <article class="card"><h2>2. Система</h2><label>PostgreSQL URL</label><input id="database_url"><div class="row"><div><label>Глубина анализа, дней</label><input id="analysis_lookback_days" type="number" value="365"></div><div><label>Максимум постов</label><input id="analysis_max_posts" type="number" value="5000"></div></div><label>Уровень логов</label><select id="log_level"><option>INFO</option><option>DEBUG</option><option>WARNING</option><option>ERROR</option></select><div class="actions"><button onclick="saveConfig()">Сохранить</button><button class="secondary" onclick="migrate()">Применить миграции</button></div></article>
 <article class="card full"><div class="status"><i id="dot" class="dot"></i><h2 id="state">Загрузка статуса…</h2></div><div class="actions"><button onclick="action('start')">Запустить</button><button class="secondary" onclick="action('restart')">Перезапустить</button><button class="secondary" onclick="action('stop')">Остановить</button><a class="btn secondary" href="/api/status" target="_blank">JSON-статус</a></div><p id="message" class="muted"></p><pre id="events"></pre></article></div></section>
@@ -676,7 +965,7 @@ if SETUP_HTML_PATH.is_file():
 
 
 class ControlHandler(BaseHTTPRequestHandler):
-    server_version = "TelegramIntelligenceControlCenter/0.23.0"
+    server_version = "TelegramIntelligenceControlCenter/0.24.0"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"control_http {self.address_string()} {fmt % args}")
@@ -795,12 +1084,14 @@ def run_setup_server() -> None:
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
     server = ThreadingHTTPServer((host, port), ControlHandler)
+    MANAGER.start_watchdog()
     print(f"control_center_started http://{host}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        MANAGER.shutdown()
         MANAGER.stop()
         server.server_close()
 

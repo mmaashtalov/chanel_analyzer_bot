@@ -1,5 +1,14 @@
 # Changelog
 
+## Sprint 24 — Pilot Reliability (unreleased)
+
+- Добавлен persistent secret-free runtime heartbeat для Telegram updater и фоновых workers.
+- `SIGTERM` теперь выполняет корректное завершение updater, workers, source registry и DB engine.
+- Control Center различает `running` и `degraded`; PID больше не является единственным health signal.
+- Добавлен bounded auto-recovery дочернего process с backoff `5 → 15 → 45` секунд.
+- После 3 попыток за 15 минут включается crash-loop lockout до ручного запуска владельцем.
+- Owner Diagnostics и Mobile Operations показывают runtime/recovery без секретов.
+
 ## Sprint 23 — Mobile Operations (unreleased)
 
 - Control Center получил phone-first путь `Deploy → Setup → Migrations → Start → Analyze`.
