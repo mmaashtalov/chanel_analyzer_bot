@@ -4,8 +4,8 @@
   "package_version": "0.24.0",
   "canonical_archive": {
     "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-    "size": 408865,
-    "sha256": "01ad4d0be6ecf4a65c0627b96b3a465b0ff6e9381dc2101e076a5198f49c8f75"
+    "size": 409078,
+    "sha256": "c3df5a9676da0c94368a3c227714974da348139767ec01447fe931f63de855dc"
   },
   "tests": "128/128",
   "test_count": 128,
@@ -24,8 +24,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size": 4619,
-      "sha256": "151145f85905071ee6e0f50525237c56b3e67bd470c81825bebbbb0280941033"
+      "size": 5268,
+      "sha256": "bd320192a1434998934ff6b6afcbcbdca899f896d9421fadf3dcaf0562b17f2b"
     },
     {
       "path": ".github/workflows/pages.yml",
@@ -954,8 +954,8 @@
     },
     {
       "path": "release/chanel_analyzer_bot_product_v0_24_0.tar.gz",
-      "size": 408865,
-      "sha256": "01ad4d0be6ecf4a65c0627b96b3a465b0ff6e9381dc2101e076a5198f49c8f75"
+      "size": 409078,
+      "sha256": "c3df5a9676da0c94368a3c227714974da348139767ec01447fe931f63de855dc"
     },
     {
       "path": "render.yaml",
@@ -995,7 +995,7 @@
     {
       "path": "scripts/project_preflight.py",
       "size": 6935,
-      "sha256": "4877a481dcd773cb8689258e758ebb4793961e6193cc7bdd41b315402f233ce8"
+      "sha256": "1fbda2cfb13a11879ae1d58d96e264966c9727fb4885f95ac40a6c439abb9563"
     },
     {
       "path": "scripts/recover_source_overlay.py",
