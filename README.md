@@ -66,6 +66,6 @@ SHA-256 релиза: `da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea0
 1. Нажмите **Deploy to Render** и задайте `OWNER_GATE_PASSWORD`.
 2. После развёртывания откройте адрес сервиса. Логин внешнего owner-gate: `owner`, пароль — заданный при deploy.
 3. В Control Center создайте внутреннего администратора, введите Telegram-ключи и параметры источников, запустите проверки и нажмите **Запустить продукт**.
-4. Публичный эмулятор работает без ключей: https://mmaashtalov.github.io/chanel_analyzer_bot/
+4. Публичный мобильный эмулятор работает без ключей: https://raw.githack.com/mmaashtalov/chanel_analyzer_bot/main/emulator/index.html
 
-`/health`, `/ready` и `/emulator` доступны публично. Control Center и управляющие API защищены внешним owner-gate и внутренней сессией администратора.
+`/health`, `/ready` и `/emulator` доступны публично после развёртывания продукта. Control Center и управляющие API защищены внешним owner-gate и внутренней сессией администратора.
