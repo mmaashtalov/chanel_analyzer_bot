@@ -115,7 +115,14 @@ jobs:
             --publish 127.0.0.1:18081:8000 \
             chanel-analyzer-bot:ci \
             python -m app.setup.secure_proxy)"
-          cleanup() { docker rm --force "$container_id" >/dev/null 2>&1 || true; }
+          cleanup() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              docker logs "$container_id" || true
+            fi
+            docker rm --force "$container_id" >/dev/null 2>&1 || true
+            exit "$status"
+          }
           trap cleanup EXIT
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:18081/health >/tmp/owner-health.json; then
@@ -123,8 +130,21 @@ jobs:
             fi
             sleep 1
           done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          health = json.loads(Path('/tmp/owner-health.json').read_text())
+          assert health['status'] == 'ok'
+          PY
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18081/)" = "401"
           curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/ >/tmp/control-center.html
           curl --fail --silent --user owner:ci-owner-password http://127.0.0.1:18081/api/status >/tmp/control-center-status.json
-          grep -q 'Telegram Intelligence Platform' /tmp/control-center.html
-          grep -q '"configured": false' /tmp/control-center-status.json
+          grep -q '<h1>Telegram Intelligence</h1>' /tmp/control-center.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          status = json.loads(Path('/tmp/control-center-status.json').read_text())
+          assert status['configured'] is False
+          assert status['status'] in {'stopped', 'degraded', 'error'}
+          assert 'runtime' in status
+          PY
