@@ -1,0 +1,55 @@
+name: Finalize production integration artifacts
+
+on:
+  push:
+    branches: [agent/production-integration]
+    paths: [.github/workflows/finalize-production-integration.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/production-integration
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build and lock release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/finalize-production-integration.yml
+          python scripts/build_release_archive.py
+          archive_hash="$(sha256sum release/chanel_analyzer_bot_product_v0_24_0.tar.gz | awk '{print $1}')"
+          ARCHIVE_HASH="$archive_hash" python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+          path = Path("scripts/project_preflight.py")
+          text = path.read_text(encoding="utf-8")
+          text, count = re.subn(
+              r'EXPECTED_ARCHIVE_HASH = "[0-9a-f]{64}"',
+              f'EXPECTED_ARCHIVE_HASH = "{os.environ["ARCHIVE_HASH"]}"',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("archive lock missing")
+          path.write_text(text, encoding="utf-8")
+          PY
+          python scripts/generate_manifest.py
+          python scripts/generate_manifest.py --check
+          python scripts/project_preflight.py
+          python -m compileall -q app alembic scripts tests
+      - name: Commit release lock
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "release: lock Alembic production fix"
+          git push origin HEAD:agent/production-integration
