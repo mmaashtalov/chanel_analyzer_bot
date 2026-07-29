@@ -57,7 +57,7 @@ def build_handlers(
         if update.effective_message:
             await update.effective_message.reply_text(
                 "Telegram OSINT Analytics Platform\n\n"
-                "/analyze @channel — аналитический PDF\n"
+                "/analyze @channel — PDF и evidence-first JSON\n"
                 "/compare @channel1 @channel2 — сравнение профилей\n"
                 "/similar @channel — ближайшие профили\n"
                 "/network @channel — PDF-карта окружения\n"
@@ -114,10 +114,18 @@ def build_handlers(
                 f"5/5 Анализ @{channel.username} завершён.\n"
                 f"Постов: {_number(result.metrics.posts_count)}\n"
                 f"Средний охват: {_number(result.metrics.mean_views)}\n"
-                f"ER/1000: {_number(result.metrics.engagement_per_1000_views)}"
+                f"ER/1000: {_number(result.metrics.engagement_per_1000_views)}\n"
+                f"Claims: {len(result.provenance.claims)} · Evidence: {len(result.provenance.evidence)}\n"
+                f"Provenance completeness: {result.provenance.completeness:.0%}"
             )
             with result.report_path.open("rb") as report_file:
                 await message.reply_document(document=report_file, filename=result.report_path.name, caption=f"Аналитический отчёт @{channel.username}")
+            with result.provenance_path.open("rb") as provenance_file:
+                await message.reply_document(
+                    document=provenance_file,
+                    filename=result.provenance_path.name,
+                    caption=f"Evidence-first JSON-пакет @{channel.username}",
+                )
         except (ProviderError, ValueError) as exc:
             await message.reply_text(str(exc))
         except asyncio.CancelledError:

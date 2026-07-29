@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
@@ -34,6 +36,24 @@ class WorkspaceRepository:
             WorkspaceRecord.telegram_user_id == user_id, WorkspaceRecord.is_active.is_(True)).order_by(WorkspaceRecord.created_at)
         async with self._session_factory() as session:
             return [self._map(r) for r in (await session.execute(query)).scalars().unique().all()]
+
+    async def list_for_channel(self, user_id: int, channel_username: str) -> list[Workspace]:
+        normalized = channel_username.strip().casefold().lstrip("@")
+        query = (
+            select(WorkspaceRecord)
+            .options(selectinload(WorkspaceRecord.items))
+            .join(WorkspaceItemRecord, WorkspaceItemRecord.workspace_id == WorkspaceRecord.id)
+            .where(
+                WorkspaceRecord.telegram_user_id == user_id,
+                WorkspaceRecord.is_active.is_(True),
+                WorkspaceItemRecord.item_type == WorkspaceItemType.CHANNEL.value,
+                WorkspaceItemRecord.normalized_value == normalized,
+            )
+            .order_by(WorkspaceRecord.created_at)
+        )
+        async with self._session_factory() as session:
+            records = (await session.execute(query)).scalars().unique().all()
+            return [self._map(record) for record in records]
 
     async def get(self, user_id: int, workspace_id: str) -> Workspace | None:
         query = select(WorkspaceRecord).options(selectinload(WorkspaceRecord.items)).where(

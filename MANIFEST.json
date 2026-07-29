@@ -7,9 +7,9 @@
     "size": 731210,
     "sha256": "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
   },
-  "tests": "105/105",
-  "test_count": 105,
-  "file_count": 221,
+  "tests": "111/111",
+  "test_count": 111,
+  "file_count": 224,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -39,8 +39,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 9861,
-      "sha256": "f0f2199d2661610ec74f12929d42d09e0a0d4bf20246bebd0ba4230187e29ea3"
+      "size": 11027,
+      "sha256": "2c4c252a9c687cf75f275c4fdd47087f58dfbf31398aeb4652e5deb58dc6be2a"
     },
     {
       "path": "Dockerfile",
@@ -158,6 +158,11 @@
       "sha256": "c47e45112fe453df49bdd99305272d916121a1cf5477b683e9efc843b0026010"
     },
     {
+      "path": "alembic/versions/0018_workspace_provenance_links.py",
+      "size": 1811,
+      "sha256": "baf5569b289c096d8bfb18e7a5eeb9dc3bfb50263cee25011b163eafb74415de"
+    },
+    {
       "path": "alembic.ini",
       "size": 598,
       "sha256": "3a178e8ab4ec832a432bc771c83f548b75db278b32421262f980f28a2f8c894a"
@@ -194,8 +199,8 @@
     },
     {
       "path": "app/application/analyze_channel.py",
-      "size": 5722,
-      "sha256": "5b5a8e2e8c96981ec204bc52bb6b8f12bb739790b1354b6f8df438ad6884aeec"
+      "size": 10631,
+      "sha256": "eaf87e5cad25cee3840236e4c3a1291144401a58580f4be1e4ad210ce89a6607"
     },
     {
       "path": "app/application/compare_channels.py",
@@ -219,8 +224,8 @@
     },
     {
       "path": "app/application/review_claims.py",
-      "size": 2846,
-      "sha256": "e1e6657957759283028ea588ac7319d9c39e563e3074543b2b15a0bd652d6341"
+      "size": 3139,
+      "sha256": "d7708bc54c7f0bd0340abbef1f4b514b3ed222287a81263805a7510d6a2fb709"
     },
     {
       "path": "app/application/track_claims.py",
@@ -249,8 +254,8 @@
     },
     {
       "path": "app/bot/handlers.py",
-      "size": 52610,
-      "sha256": "bd5a8ff79072463ae7939b9aab6aaaca72142f1d39e4b1191d1272ef926b09d2"
+      "size": 53119,
+      "sha256": "218b8f6ce0a66d3ba0aa4ad88a0ec0762e83b12174ed77b2ba380b1922e0c6fe"
     },
     {
       "path": "app/collection/__init__.py",
@@ -299,8 +304,8 @@
     },
     {
       "path": "app/db/claim_review_repository.py",
-      "size": 5555,
-      "sha256": "d80036df6dfd2815a45f8c1c535d66d722dacbff230fc37928cf9b0aa63b727a"
+      "size": 6233,
+      "sha256": "cfa54c1e27ea87eacdff6d88ddc4586b9ae16c90a84d62cc7c772b726e9ff7a0"
     },
     {
       "path": "app/db/contradiction_repository.py",
@@ -319,8 +324,8 @@
     },
     {
       "path": "app/db/evidence_repository.py",
-      "size": 4077,
-      "sha256": "8e808b4b8cb1d5ed2767c8675ace106319eac59d6f58db5e6e7688f06dbebc93"
+      "size": 5278,
+      "sha256": "1d3a46cc137face22363e3b326a83e3ba0020a21961f3c18398b9aad849516b1"
     },
     {
       "path": "app/db/evidence_request_repository.py",
@@ -329,8 +334,8 @@
     },
     {
       "path": "app/db/models.py",
-      "size": 37516,
-      "sha256": "9b77aa85c1c8b898af6e97c0e1f2925cfc5c3ec22cf22198421f67110dd10444"
+      "size": 38392,
+      "sha256": "3d8407d1dccf097a1edb6a2233c9e9e68b04cb4e33befc9cec50532707a91212"
     },
     {
       "path": "app/db/repositories.py",
@@ -344,13 +349,13 @@
     },
     {
       "path": "app/db/source_collection_repository.py",
-      "size": 4786,
-      "sha256": "c97763e127615f06cfabd8d05cf4850558a842eab5e4ffac41adc6c3428f9f5f"
+      "size": 5219,
+      "sha256": "bb57e6b50c7318d9c9aedd02c48d415e3368c90960efc817b1c23ff39a4de74a"
     },
     {
       "path": "app/db/temporal_claim_repository.py",
-      "size": 19323,
-      "sha256": "4bf6290b610692ec28b6a5b8f4bd1e7452715cea5e9cdbd200b29f616175e51a"
+      "size": 19653,
+      "sha256": "535816c2bcd853d09846dac7c4136050ea32ebb22a5fa250ac9bc6a48d7fd764"
     },
     {
       "path": "app/db/workspace_evolution_repository.py",
@@ -364,8 +369,8 @@
     },
     {
       "path": "app/db/workspace_repository.py",
-      "size": 4867,
-      "sha256": "614fe6438ff051b56a347f953f87f9ad0da94ce07cec2ac0717177fec7ddd107"
+      "size": 5826,
+      "sha256": "e5caa346fa41064e798304e3d0833c94c7bbaa84dafd7579b62d1223b3a5a86c"
     },
     {
       "path": "app/demo/__init__.py",
@@ -444,8 +449,8 @@
     },
     {
       "path": "app/evidence/__init__.py",
-      "size": 262,
-      "sha256": "b97935324105a1133d6f2bbaf1f1684d0d24c93741a0b41476b7d1d261ea5ca6"
+      "size": 370,
+      "sha256": "47d346917b246d8323581ccda691c34f81b048b459a26e2eeb4be1a08971fafa"
     },
     {
       "path": "app/evidence/acquisition.py",
@@ -469,13 +474,13 @@
     },
     {
       "path": "app/evidence/engine.py",
-      "size": 9977,
-      "sha256": "3bc5df4564adb9ca1bc6d7edf9e8819a2f991dc63bc4636bdd971750a4f11227"
+      "size": 22448,
+      "sha256": "f29c9356784eedbda36263952e57d8ae23ba0a64b7de9718b168e19428f6b8c9"
     },
     {
       "path": "app/evidence/models.py",
-      "size": 2706,
-      "sha256": "ba8859e7dd42def7097bc9bd3c4c980872f191d96101632d292c90153a704571"
+      "size": 2772,
+      "sha256": "5173c1068a02dc3a6921b6790ad5f8d529049351b1e2a246717c724ace3881e9"
     },
     {
       "path": "app/evidence/review.py",
@@ -529,8 +534,8 @@
     },
     {
       "path": "app/main.py",
-      "size": 12715,
-      "sha256": "00929f09be933ff4f0ddb5ac6a7a54e1b5e9d2524644954de90246d66c45fb95"
+      "size": 12984,
+      "sha256": "95a6443e22f4d3f44eaeedad9dab3a0abbc25b0a1952f723f864f77225bf7519"
     },
     {
       "path": "app/monitoring/__init__.py",
@@ -624,8 +629,8 @@
     },
     {
       "path": "app/reports/pdf.py",
-      "size": 14726,
-      "sha256": "8b4b501e594211bf8c5e8a1eb14de237f3113fa80ada053c2266cc7e2eb665a4"
+      "size": 18853,
+      "sha256": "c721dec7710b2334f38a4e0f918b030f5b0274ac5f6c7a9569ae22d886d0700c"
     },
     {
       "path": "app/reports/verification_pdf.py",
@@ -684,8 +689,8 @@
     },
     {
       "path": "app/sources/adapters/__init__.py",
-      "size": 175,
-      "sha256": "cf7f36d30e1d4da116843945f7561e2e93b0bb866da59ef965c80a4c284805ed"
+      "size": 227,
+      "sha256": "6032932afadaef7954b7727c55a830ae2e4328f8db5fc0b584d62f5a4d14ad84"
     },
     {
       "path": "app/sources/adapters/rss.py",
@@ -694,8 +699,8 @@
     },
     {
       "path": "app/sources/adapters/telegram.py",
-      "size": 2156,
-      "sha256": "08aed186e24391cc381d51379e89545ee0541b28522f43179686e480ab10a658"
+      "size": 2316,
+      "sha256": "5dfa6c70eca73c3d116ce6ea62cbe8526adae45671e8e2558add00913aa4684c"
     },
     {
       "path": "app/sources/base.py",
@@ -858,6 +863,11 @@
       "sha256": "784aaec61426c13430f7284a783cc6155dba88c4bec4eabce620ba1e898f9a65"
     },
     {
+      "path": "docs/SPRINT22_REPORT.md",
+      "size": 2522,
+      "sha256": "2632840bf72045859fbc3c5eb411a238b413eff083eda41f1fc274722e90e6f0"
+    },
+    {
       "path": "docs/SPRINT_17_REPORT.md",
       "size": 1339,
       "sha256": "5021dc0be590370a22e029440455158830bbc47c4758345d7ddf37b0ea506dda"
@@ -961,6 +971,11 @@
       "path": "tests/test_advanced.py",
       "size": 478,
       "sha256": "1928e2485b1588a32fe2fd90a9323a0e217d4d7a70ec440aecb487d2ab0da589"
+    },
+    {
+      "path": "tests/test_channel_evidence_first.py",
+      "size": 8224,
+      "sha256": "9d8474e22a5058cf81087ca5a6d3e850d36e082544b0debb549e014c3a2380f9"
     },
     {
       "path": "tests/test_channel_ref.py",

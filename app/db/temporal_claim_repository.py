@@ -4,7 +4,7 @@ import hashlib
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import (
@@ -13,6 +13,7 @@ from app.db.models import (
     ClaimIdentityRecord,
     ClaimTimelineLinkRecord,
     ProvenanceBundleRecord,
+    WorkspaceProvenanceLinkRecord,
 )
 from app.evidence.contradictions import (
     ContradictionStatus,
@@ -39,10 +40,16 @@ class TemporalClaimRepository:
 
     async def build_workspace_timeline(self, workspace_id: str) -> dict:
         async with self._session_factory() as session:
+            linked_bundle_ids = select(WorkspaceProvenanceLinkRecord.bundle_id).where(
+                WorkspaceProvenanceLinkRecord.workspace_id == workspace_id
+            )
             rows = (await session.execute(
                 select(AnalyticClaimRecord, ProvenanceBundleRecord)
                 .join(ProvenanceBundleRecord, ProvenanceBundleRecord.id == AnalyticClaimRecord.bundle_id)
-                .where(ProvenanceBundleRecord.subject_id.like(f"{workspace_id}:%"))
+                .where(or_(
+                    ProvenanceBundleRecord.subject_id.like(f"{workspace_id}:%"),
+                    ProvenanceBundleRecord.id.in_(linked_bundle_ids),
+                ))
                 .order_by(ProvenanceBundleRecord.created_at, AnalyticClaimRecord.claim_index)
             )).all()
             if not rows:

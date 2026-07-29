@@ -44,9 +44,7 @@ class ReviewClaimsUseCase:
         context = await self._review_repository.claim_context(claim_id)
         if context is None:
             raise LookupError("Claim не найден")
-        workspace_id = str(context["subject_id"]).split(":", 1)[0]
-        workspace = await self._workspace_repository.get(telegram_user_id, workspace_id)
-        if workspace is None:
+        if not await self._owned_workspace(telegram_user_id, context):
             raise PermissionError("Claim не принадлежит Workspace пользователя")
         return await self._review_repository.review_claim(
             claim_id, telegram_user_id, status, comment
@@ -60,7 +58,15 @@ class ReviewClaimsUseCase:
         context = await self._review_repository.claim_context(claim_id)
         if context is None:
             raise LookupError("Claim не найден")
-        workspace_id = str(context["subject_id"]).split(":", 1)[0]
-        if await self._workspace_repository.get(telegram_user_id, workspace_id) is None:
+        if not await self._owned_workspace(telegram_user_id, context):
             raise PermissionError("Claim не принадлежит Workspace пользователя")
         return await self._review_repository.history(claim_id)
+
+    async def _owned_workspace(self, telegram_user_id: int, context: dict) -> bool:
+        workspace_ids = [str(item) for item in context.get("workspace_ids", [])]
+        if not workspace_ids and context.get("subject_type") != "channel_analysis":
+            workspace_ids = [str(context["subject_id"]).split(":", 1)[0]]
+        return any(
+            await self._workspace_repository.get(telegram_user_id, workspace_id) is not None
+            for workspace_id in workspace_ids
+        )

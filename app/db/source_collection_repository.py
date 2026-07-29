@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -18,6 +19,7 @@ class CollectionStats:
     collected: int
     accepted: int
     duplicates: int
+    document_ids: tuple[str, ...] = ()
 
 
 class SourceCollectionRepository:
@@ -34,6 +36,7 @@ class SourceCollectionRepository:
             await session.flush()
             accepted = 0
             duplicates = 0
+            document_ids: list[str] = []
             for document in documents:
                 existing = (await session.execute(
                     select(SourceDocumentRecord.id).where(or_(
@@ -44,8 +47,11 @@ class SourceCollectionRepository:
                 )).scalar_one_or_none()
                 if existing is not None:
                     duplicates += 1
+                    document_ids.append(existing)
                     continue
-                session.add(SourceDocumentRecord(
+                record_id = str(uuid.uuid4())
+                record = SourceDocumentRecord(
+                    id=record_id,
                     source_id=source.id,
                     source_run_id=run.id,
                     external_document_id=document.document_id,
@@ -58,7 +64,9 @@ class SourceCollectionRepository:
                     fingerprint=document.fingerprint,
                     content_fingerprint=document.content_fingerprint,
                     document_json=document.to_dict(),
-                ))
+                )
+                session.add(record)
+                document_ids.append(record_id)
                 accepted += 1
             now = datetime.now(UTC)
             run.status = "completed"
@@ -68,7 +76,14 @@ class SourceCollectionRepository:
             run.finished_at = now
             source.last_success_at = now
             await session.commit()
-            return CollectionStats(adapter.source_type.value, source_external_id, len(documents), accepted, duplicates)
+            return CollectionStats(
+                adapter.source_type.value,
+                source_external_id,
+                len(documents),
+                accepted,
+                duplicates,
+                tuple(document_ids),
+            )
 
     async def record_failure(
         self, adapter: SourceAdapter, source_external_id: str, error: Exception

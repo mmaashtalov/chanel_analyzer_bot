@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
+import textwrap
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
@@ -11,13 +13,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
-from app.analytics.metrics import QuantitativeMetrics
 from app.analytics.advanced import AdvancedAnalytics, calculate_advanced
+from app.analytics.metrics import QuantitativeMetrics
 from app.domain.models import ChannelSnapshot
+from app.evidence.models import ProvenanceBundle
 from app.profiling.models import ContentDNAProfile
 
 
-def _fmt(value: float | int | None, digits: int = 1) -> str:
+def _fmt(value: float | None, digits: int = 1) -> str:
     if value is None:
         return "н/д"
     if isinstance(value, int):
@@ -31,6 +34,91 @@ def _new_page(title: str):
     return fig
 
 
+def _provenance_pages(pdf: PdfPages, title: str, lines: list[str], lines_per_page: int = 20) -> None:
+    wrapped: list[str] = []
+    for line in lines:
+        wrapped.extend(textwrap.wrap(str(line), width=118) or [""])
+        wrapped.append("")
+    for page_index in range(0, len(wrapped), lines_per_page):
+        page_title = title if page_index == 0 else f"{title} — продолжение"
+        fig = _new_page(page_title)
+        y = 0.86
+        for line in wrapped[page_index:page_index + lines_per_page]:
+            fig.text(0.06, y, line, fontsize=9.2, va="top")
+            y -= 0.038
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+
+def _add_provenance_appendix(pdf: PdfPages, provenance: ProvenanceBundle) -> None:
+    metadata = provenance.metadata
+    _provenance_pages(pdf, "Evidence & Provenance", [
+        f"Bundle ID: {provenance.bundle_id}",
+        f"Subject: {provenance.subject_id}",
+        f"Methodology: {provenance.methodology_version}",
+        f"Integrity SHA-256: {provenance.integrity_hash}",
+        f"Completeness: {provenance.completeness:.0%}",
+        f"Claims: {len(provenance.claims)} · Evidence references: {len(provenance.evidence)}",
+        f"Input documents: {metadata.get('input_document_count', 'н/д')} · Linked: {metadata.get('linked_document_count', 'н/д')}",
+        f"Primary document coverage: {float(metadata.get('primary_document_coverage', 0)):.0%}",
+        "",
+        "Методологическое правило: наблюдение, расчёт, confidence и аналитическая оценка разделены.",
+    ])
+
+    claim_lines: list[str] = []
+    for claim in provenance.claims:
+        claim_lines.extend([
+            f"Claim {claim.claim_index} · {claim.category} · {claim.claim_id}",
+            f"Statement: {claim.statement}",
+            f"Assessment: {claim.assessment}",
+            f"Confidence: {claim.confidence:.0%} · Evidence quality: {claim.evidence_quality:.0%}",
+            f"Evidence IDs: {', '.join(claim.evidence_ids)}",
+            f"Caveats: {'; '.join(claim.caveats) if claim.caveats else 'нет'}",
+            "",
+        ])
+    _provenance_pages(pdf, "Claims и evidence links", claim_lines or ["Claims не сформированы."])
+
+    document_lines: list[str] = []
+    primary_documents = [
+        item for item in provenance.evidence if item.kind.value == "primary_document"
+    ]
+    for item in primary_documents[:12]:
+        document_lines.extend([
+            f"{item.label}",
+            f"Source: {item.source_type or 'н/д'} · Author: {item.author or 'не указан'}",
+            f"Published: {item.published_at:%Y-%m-%d %H:%M UTC}" if item.published_at else "Published: н/д",
+            f"URL/locator: {item.canonical_url or item.locator}",
+            f"Fingerprint: {item.fingerprint or item.content_hash or 'н/д'}",
+            f"Excerpt: {item.excerpt or 'нет'}",
+            "",
+        ])
+    _provenance_pages(pdf, "Первичные документы", document_lines or ["Первичные документы не связаны."])
+    _provenance_pages(
+        pdf,
+        "Методология и ограничения evidence-first пакета",
+        list(provenance.limitations) or ["Ограничения не указаны."],
+    )
+
+
+def build_provenance_json(
+    bundle: ProvenanceBundle,
+    output_dir: Path,
+    channel_username: str,
+    job_id: str,
+) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    safe_channel = "".join(
+        character if character.isalnum() or character in "-_" else "_"
+        for character in channel_username
+    )[:80]
+    path = output_dir / f"provenance_{safe_channel}_{job_id}.json"
+    path.write_text(
+        json.dumps(bundle.to_dict(), ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return path
+
+
 def build_quantitative_pdf(
     snapshot: ChannelSnapshot,
     metrics: QuantitativeMetrics,
@@ -38,6 +126,7 @@ def build_quantitative_pdf(
     job_id: str,
     advanced: AdvancedAnalytics | None = None,
     content_dna: ContentDNAProfile | None = None,
+    provenance: ProvenanceBundle | None = None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"{snapshot.username}_{job_id}.pdf"
@@ -56,7 +145,7 @@ def build_quantitative_pdf(
             f"ER на 1 000 просмотров: {_fmt(metrics.engagement_per_1000_views, 2)}",
             f"Средняя длина поста: {_fmt(metrics.mean_post_length)} символов",
             f"Постов в день: {_fmt(metrics.posts_per_day, 2)}",
-            f"Сформировано: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
+            f"Сформировано: {datetime.now(UTC).strftime('%d.%m.%Y %H:%M')}",
         ]
         fig.text(0.07, 0.80, "\n\n".join(lines), fontsize=14, va="top")
         fig.text(
@@ -313,5 +402,8 @@ def build_quantitative_pdf(
                 y -= 0.065
             pdf.savefig(fig, bbox_inches="tight")
             plt.close(fig)
+
+        if provenance is not None:
+            _add_provenance_appendix(pdf, provenance)
 
     return path

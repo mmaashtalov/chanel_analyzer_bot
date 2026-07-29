@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import (
@@ -8,6 +8,7 @@ from app.db.models import (
     ClaimEvidenceLinkRecord,
     EvidenceReferenceRecord,
     ProvenanceBundleRecord,
+    WorkspaceProvenanceLinkRecord,
 )
 from app.evidence.models import ProvenanceBundle
 
@@ -94,3 +95,32 @@ class EvidenceRepository:
         async with self._session_factory() as session:
             row = (await session.execute(query)).scalar_one_or_none()
             return None if row is None else row.bundle_json
+
+    async def link_to_workspace(
+        self,
+        bundle_id: str,
+        workspace_id: str,
+        source_item: str,
+        link_type: str = "channel_analysis",
+    ) -> bool:
+        """Create a durable, idempotent association between a bundle and Workspace."""
+        async with self._session_factory() as session:
+            bundle = await session.get(ProvenanceBundleRecord, bundle_id)
+            if bundle is None:
+                raise LookupError("Provenance bundle не найден")
+            existing = (await session.execute(
+                select(WorkspaceProvenanceLinkRecord).where(
+                    WorkspaceProvenanceLinkRecord.workspace_id == workspace_id,
+                    WorkspaceProvenanceLinkRecord.bundle_id == bundle_id,
+                )
+            )).scalar_one_or_none()
+            if existing is not None:
+                return False
+            session.add(WorkspaceProvenanceLinkRecord(
+                workspace_id=workspace_id,
+                bundle_id=bundle_id,
+                link_type=link_type,
+                source_item=source_item,
+            ))
+            await session.commit()
+            return True

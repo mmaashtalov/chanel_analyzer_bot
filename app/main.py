@@ -75,7 +75,8 @@ async def run() -> None:
     contradiction_repository = ContradictionRepository(session_factory)
     provider = build_provider(settings)
     source_registry = SourceRegistry()
-    source_registry.register(TelegramSourceAdapter(provider))
+    telegram_source_adapter = TelegramSourceAdapter(provider)
+    source_registry.register(telegram_source_adapter)
     source_registry.register(RSSSourceAdapter(
         lambda url: safe_fetch(
             url,
@@ -103,6 +104,10 @@ async def run() -> None:
         profile_repository=profile_repository,
         graph_repository=graph_repository,
         evolution_repository=evolution_repository,
+        source_adapter=telegram_source_adapter,
+        source_collection_repository=source_collection_repository,
+        evidence_repository=evidence_repository,
+        workspace_repository=workspace_repository,
     )
     compare_use_case = CompareChannelsUseCase(provider, repository, settings.report_output_dir, settings.analysis_lookback_days, profile_repository)
     similar_use_case = FindSimilarProfilesUseCase(profile_repository)

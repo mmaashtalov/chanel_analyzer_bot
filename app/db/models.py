@@ -409,6 +409,24 @@ class ProvenanceBundleRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
+class WorkspaceProvenanceLinkRecord(Base):
+    __tablename__ = "workspace_provenance_links"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "bundle_id", name="uq_workspace_provenance_link"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    bundle_id: Mapped[str] = mapped_column(
+        ForeignKey("provenance_bundles.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    link_type: Mapped[str] = mapped_column(String(32), nullable=False, default="channel_analysis")
+    source_item: Mapped[str] = mapped_column(String(1024), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class AnalyticClaimRecord(Base):
     __tablename__ = "analytic_claims"
     __table_args__ = (UniqueConstraint("bundle_id", "claim_index", name="uq_claim_bundle_index"),)

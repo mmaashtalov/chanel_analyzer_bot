@@ -1,5 +1,15 @@
 # Changelog
 
+## Sprint 22 — Unified Evidence-First Analyze (unreleased)
+
+- `/analyze` теперь строит единый пакет `UnifiedDocument → claims → evidence → provenance` из одного снимка Telegram.
+- Источник сохраняет fingerprint, SHA-256, URL, дату, excerpt и связь с записью Source Registry.
+- PDF получил provenance appendix, а рядом формируется полный JSON-пакет с ограничениями и coverage.
+- Повторный анализ одинакового снимка сохраняет детерминированные bundle/claim/evidence IDs и integrity hash.
+- Provenance bundle автоматически связывается с активными Workspace, содержащими анализируемый канал.
+- Review и temporal tracking теперь видят связанные channel-analysis bundles; добавлена миграция `0018_workspace_provenance_links`.
+- Добавлены regression-тесты единого snapshot-потока, повторяемости и публикации evidence-пакета.
+
 ## Sprint 21 — Contradiction Triage & Resolution (unreleased)
 
 - Добавлена очередь активных contradictions с приоритизацией по severity и confidence.

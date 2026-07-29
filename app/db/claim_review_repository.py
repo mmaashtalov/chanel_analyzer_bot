@@ -3,10 +3,15 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.db.models import AnalyticClaimRecord, ClaimReviewEventRecord, ProvenanceBundleRecord
+from app.db.models import (
+    AnalyticClaimRecord,
+    ClaimReviewEventRecord,
+    ProvenanceBundleRecord,
+    WorkspaceProvenanceLinkRecord,
+)
 from app.evidence.review import (
     ClaimReviewStatus,
     adjusted_scores,
@@ -20,9 +25,15 @@ class ClaimReviewRepository:
         self._session_factory = session_factory
 
     async def latest_bundle_for_workspace(self, workspace_id: str) -> dict | None:
+        linked_bundle_ids = select(WorkspaceProvenanceLinkRecord.bundle_id).where(
+            WorkspaceProvenanceLinkRecord.workspace_id == workspace_id
+        )
         query = (
             select(ProvenanceBundleRecord)
-            .where(ProvenanceBundleRecord.subject_id.like(f"{workspace_id}:%"))
+            .where(or_(
+                ProvenanceBundleRecord.subject_id.like(f"{workspace_id}:%"),
+                ProvenanceBundleRecord.id.in_(linked_bundle_ids),
+            ))
             .order_by(ProvenanceBundleRecord.created_at.desc())
             .limit(1)
         )
@@ -41,10 +52,17 @@ class ClaimReviewRepository:
             if row is None:
                 return None
             claim, bundle = row
+            workspace_ids = (await session.execute(
+                select(WorkspaceProvenanceLinkRecord.workspace_id).where(
+                    WorkspaceProvenanceLinkRecord.bundle_id == bundle.id
+                )
+            )).scalars().all()
             return {
                 "claim_id": claim.id,
                 "bundle_id": bundle.id,
+                "subject_type": bundle.subject_type,
                 "subject_id": bundle.subject_id,
+                "workspace_ids": list(workspace_ids),
                 "review_status": claim.review_status,
             }
 

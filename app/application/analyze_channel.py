@@ -1,17 +1,29 @@
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from app.analytics.metrics import QuantitativeMetrics, calculate_metrics
 from app.collection.base import ChannelDataProvider
-from app.db.repositories import EvolutionRepository, GraphRepository, JobRepository, ProfileRepository
+from app.db.evidence_repository import EvidenceRepository
+from app.db.repositories import (
+    EvolutionRepository,
+    GraphRepository,
+    JobRepository,
+    ProfileRepository,
+)
+from app.db.source_collection_repository import CollectionStats, SourceCollectionRepository
+from app.db.workspace_repository import WorkspaceRepository
 from app.domain.models import ChannelRef, ChannelSnapshot, JobStatus
-from app.graph import GraphSnapshot, build_graph_snapshot
+from app.evidence.engine import build_channel_analysis_provenance
+from app.evidence.models import ProvenanceBundle
 from app.evolution import EvolutionReport, compare_profile_versions
-from app.profiling import ContentDNAProfile, build_content_dna
+from app.graph import GraphSnapshot, build_graph_snapshot
 from app.profiles import IntelligenceProfile, build_intelligence_profile
-from app.reports.pdf import build_quantitative_pdf
+from app.profiling import ContentDNAProfile, build_content_dna
+from app.reports.pdf import build_provenance_json, build_quantitative_pdf
+from app.sources.adapters.telegram import documents_from_snapshot
+from app.sources.base import SourceAdapter
 
 ProgressCallback = Callable[[int, str], Awaitable[None]]
 
@@ -27,6 +39,8 @@ class AnalyzeChannelResult:
     profile_version: int
     graph_snapshot: GraphSnapshot | None
     evolution_report: EvolutionReport | None
+    provenance: ProvenanceBundle
+    provenance_path: Path
 
 
 class AnalyzeChannelUseCase:
@@ -39,6 +53,10 @@ class AnalyzeChannelUseCase:
         profile_repository: ProfileRepository | None = None,
         graph_repository: GraphRepository | None = None,
         evolution_repository: EvolutionRepository | None = None,
+        source_adapter: SourceAdapter | None = None,
+        source_collection_repository: SourceCollectionRepository | None = None,
+        evidence_repository: EvidenceRepository | None = None,
+        workspace_repository: WorkspaceRepository | None = None,
     ) -> None:
         self._provider = provider
         self._repository = repository
@@ -47,6 +65,10 @@ class AnalyzeChannelUseCase:
         self._profile_repository = profile_repository
         self._graph_repository = graph_repository
         self._evolution_repository = evolution_repository
+        self._source_adapter = source_adapter
+        self._source_collection_repository = source_collection_repository
+        self._evidence_repository = evidence_repository
+        self._workspace_repository = workspace_repository
 
     async def execute(
         self,
@@ -66,20 +88,91 @@ class AnalyzeChannelUseCase:
             date_to = datetime.now(UTC)
             date_from = date_to - timedelta(days=self._lookback_days)
             snapshot = await self._provider.fetch_channel(channel, date_from=date_from, date_to=date_to)
-            if not snapshot.posts:
+            documents = documents_from_snapshot(snapshot)
+            if not documents:
                 raise ValueError("За выбранный период не найдено текстовых публикаций")
+            workspaces = (
+                await self._workspace_repository.list_for_channel(telegram_user_id, channel.username)
+                if self._workspace_repository is not None
+                else []
+            )
+            workspace_ids = tuple(workspace.id for workspace in workspaces)
+            if workspace_ids and self._evidence_repository is None:
+                raise RuntimeError("Для связи provenance с Workspace нужен EvidenceRepository")
 
             await report(2, "Нормализую и проверяю данные", JobStatus.ANALYZING)
+            collection_stats: CollectionStats | None = None
+            document_record_ids: dict[str, str] = {}
+            if self._source_adapter is not None and self._source_collection_repository is not None:
+                collection_stats = await self._source_collection_repository.persist(
+                    self._source_adapter,
+                    channel.username,
+                    documents,
+                )
+                if len(collection_stats.document_ids) != len(documents):
+                    raise RuntimeError("Source Registry вернул неполную карту сохранённых документов")
+                document_record_ids = {
+                    document.document_id: record_id
+                    for document, record_id in zip(documents, collection_stats.document_ids, strict=True)
+                }
             await report(3, "Рассчитываю метрики", JobStatus.ANALYZING)
             metrics = calculate_metrics(snapshot)
 
-            await report(4, "Строю Content DNA и PDF", JobStatus.REPORTING)
+            await report(4, "Строю Content DNA, provenance и PDF", JobStatus.REPORTING)
             content_dna = build_content_dna(snapshot)
-            report_path = build_quantitative_pdf(
-                snapshot, metrics, self._report_output_dir, job_id, content_dna=content_dna
+            provenance = build_channel_analysis_provenance(
+                snapshot,
+                documents,
+                metrics,
+                content_dna,
+                job_id=job_id,
+                document_record_ids=document_record_ids,
+                collection_stats=asdict(collection_stats) if collection_stats is not None else None,
+                workspace_ids=workspace_ids,
             )
+            report_path = build_quantitative_pdf(
+                snapshot,
+                metrics,
+                self._report_output_dir,
+                job_id,
+                content_dna=content_dna,
+                provenance=provenance,
+            )
+            provenance_path = build_provenance_json(
+                provenance,
+                self._report_output_dir,
+                channel.username,
+                job_id,
+            )
+            if self._evidence_repository is not None:
+                await self._evidence_repository.save(provenance)
+                for workspace_id in workspace_ids:
+                    await self._evidence_repository.link_to_workspace(
+                        provenance.bundle_id,
+                        workspace_id,
+                        channel.username,
+                    )
             result_payload = metrics.to_dict()
             result_payload["content_dna"] = content_dna.to_dict()
+            result_payload["provenance"] = {
+                "bundle_id": provenance.bundle_id,
+                "subject_id": provenance.subject_id,
+                "methodology_version": provenance.methodology_version,
+                "integrity_hash": provenance.integrity_hash,
+                "completeness": provenance.completeness,
+                "claims": len(provenance.claims),
+                "evidence_references": len(provenance.evidence),
+                "json_path": str(provenance_path),
+                "workspace_ids": list(workspace_ids),
+            }
+            if collection_stats is not None:
+                result_payload["source_collection"] = {
+                    "source_type": collection_stats.source_type,
+                    "source_id": collection_stats.source_id,
+                    "collected": collection_stats.collected,
+                    "accepted": collection_stats.accepted,
+                    "duplicates": collection_stats.duplicates,
+                }
             intelligence_profile = build_intelligence_profile(snapshot, content_dna, result_payload)
             profile_version = 0
             profile_id = None
@@ -111,7 +204,19 @@ class AnalyzeChannelUseCase:
             )
             if progress:
                 await progress(5, "Отчёт готов")
-            return AnalyzeChannelResult(job_id, snapshot, metrics, report_path, content_dna, intelligence_profile, profile_version, graph_snapshot, evolution_report)
+            return AnalyzeChannelResult(
+                job_id=job_id,
+                snapshot=snapshot,
+                metrics=metrics,
+                report_path=report_path,
+                content_dna=content_dna,
+                intelligence_profile=intelligence_profile,
+                profile_version=profile_version,
+                graph_snapshot=graph_snapshot,
+                evolution_report=evolution_report,
+                provenance=provenance,
+                provenance_path=provenance_path,
+            )
         except Exception as exc:
             await self._repository.fail(job_id, str(exc))
             raise
