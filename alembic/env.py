@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -7,10 +8,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.db import models  # noqa: F401
 from app.db.base import Base
+from app.db.url import normalize_database_url
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+database_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+config.set_main_option("sqlalchemy.url", normalize_database_url(database_url).replace("%", "%%"))
 target_metadata = Base.metadata
 
 
