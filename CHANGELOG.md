@@ -1,5 +1,16 @@
 # Changelog
 
+## Sprint 21 — Contradiction Triage & Resolution (unreleased)
+
+- Добавлена очередь активных contradictions с приоритизацией по severity и confidence.
+- Добавлены четыре аналитических решения: confirm contradiction, mark compatible, accept newer claim и request evidence.
+- Добавлен append-only журнал решений с последовательной SHA-256 связью событий.
+- Добавлена миграция `0017_contradiction_triage` и поле текущего canonical claim для claim identity.
+- Добавлены Telegram-команды `/contradictions`, `/contradiction`, `/contradiction_resolve` и `/contradiction_report`.
+- Решение `request evidence` создаёт существующий Evidence Request и сохраняет его ID в событии.
+- После решения пересчитываются temporal statuses, canonical claim и provenance integrity.
+- Добавлены PDF/JSON contradiction dossier и regression-тесты state machine/export-контура.
+
 ## 0.22.0-product
 
 - Добавлен Product Control Center.

@@ -4,38 +4,49 @@ import structlog
 from telegram import Update
 from telegram.ext import Application, CommandHandler
 
+from app.application.acquire_evidence import AcquireEvidenceUseCase
 from app.application.analyze_channel import AnalyzeChannelUseCase
 from app.application.compare_channels import CompareChannelsUseCase
+from app.application.corroborate_claims import CorroborateClaimsUseCase
+from app.application.external_acquisition import (
+    ControlledExternalAcquisition,
+    ExternalAcquisitionLimits,
+)
 from app.application.find_similar_profiles import FindSimilarProfilesUseCase
-from app.application.workspace_report import WorkspaceReportUseCase
-from app.application.workspace_changes import WorkspaceChangesUseCase
 from app.application.review_claims import ReviewClaimsUseCase
+from app.application.track_claims import TrackClaimsUseCase
+from app.application.triage_contradictions import TriageContradictionsUseCase
+from app.application.workspace_changes import WorkspaceChangesUseCase
+from app.application.workspace_report import WorkspaceReportUseCase
 from app.bot.handlers import build_handlers
 from app.collection.factory import build_provider
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.db.repositories import EvolutionRepository, GraphRepository, JobRepository, MonitoringRepository, ProfileRepository
-from app.db.session import build_engine, build_session_factory, create_schema
-from app.db.workspace_repository import WorkspaceRepository
-from app.db.workspace_intelligence_repository import WorkspaceIntelligenceRepository
-from app.db.workspace_evolution_repository import WorkspaceEvolutionRepository
-from app.db.evidence_repository import EvidenceRepository
-from app.db.document_evidence_repository import DocumentEvidenceRepository
 from app.db.claim_review_repository import ClaimReviewRepository
-from app.db.evidence_request_repository import EvidenceRequestRepository
-from app.db.source_collection_repository import SourceCollectionRepository
+from app.db.contradiction_repository import ContradictionRepository
 from app.db.corroboration_repository import CorroborationRepository
+from app.db.document_evidence_repository import DocumentEvidenceRepository
+from app.db.evidence_repository import EvidenceRepository
+from app.db.evidence_request_repository import EvidenceRequestRepository
+from app.db.repositories import (
+    EvolutionRepository,
+    GraphRepository,
+    JobRepository,
+    MonitoringRepository,
+    ProfileRepository,
+)
+from app.db.session import build_engine, build_session_factory, create_schema
+from app.db.source_collection_repository import SourceCollectionRepository
 from app.db.temporal_claim_repository import TemporalClaimRepository
-from app.application.acquire_evidence import AcquireEvidenceUseCase
-from app.application.external_acquisition import ControlledExternalAcquisition, ExternalAcquisitionLimits
-from app.application.corroborate_claims import CorroborateClaimsUseCase
-from app.application.track_claims import TrackClaimsUseCase
+from app.db.workspace_evolution_repository import WorkspaceEvolutionRepository
+from app.db.workspace_intelligence_repository import WorkspaceIntelligenceRepository
+from app.db.workspace_repository import WorkspaceRepository
 from app.monitoring.service import MonitoringService
-from app.workers.monitoring import MonitoringWorker
-from app.workers.evidence_acquisition import EvidenceAcquisitionWorker
 from app.sources import SourceRegistry
 from app.sources.adapters import RSSSourceAdapter, TelegramSourceAdapter
 from app.sources.http import safe_fetch
+from app.workers.evidence_acquisition import EvidenceAcquisitionWorker
+from app.workers.monitoring import MonitoringWorker
 
 
 async def run() -> None:
@@ -61,6 +72,7 @@ async def run() -> None:
     source_collection_repository = SourceCollectionRepository(session_factory)
     corroboration_repository = CorroborationRepository(session_factory)
     temporal_claim_repository = TemporalClaimRepository(session_factory)
+    contradiction_repository = ContradictionRepository(session_factory)
     provider = build_provider(settings)
     source_registry = SourceRegistry()
     source_registry.register(TelegramSourceAdapter(provider))
@@ -105,6 +117,11 @@ async def run() -> None:
         workspace_repository, claim_review_repository, corroboration_repository
     )
     track_claims_use_case = TrackClaimsUseCase(workspace_repository, temporal_claim_repository)
+    contradiction_use_case = TriageContradictionsUseCase(
+        workspace_repository,
+        contradiction_repository,
+        acquire_evidence_use_case,
+    )
     workspace_changes_use_case = WorkspaceChangesUseCase(
         workspace_repository, workspace_evolution_repository, settings.report_output_dir, evidence_repository,
         document_evidence_repository
@@ -116,9 +133,10 @@ async def run() -> None:
         workspace_create_handler, workspaces_handler, workspace_show_handler, workspace_add_handler,
         workspace_remove_handler, workspace_delete_handler, workspace_report_handler, workspace_changes_handler,
         claims_handler, claim_review_handler, claim_history_handler, evidence_gaps_handler, verification_report_handler, corroboration_handler, claim_timeline_build_handler, claim_timeline_handler, claim_timeline_report_handler, evidence_request_handler, evidence_requests_handler, evidence_request_cancel_handler, evidence_request_retry_handler, evidence_request_run_handler, evidence_request_history_handler, status_handler,
+        contradictions_handler, contradiction_handler, contradiction_resolve_handler, contradiction_report_handler,
     ) = build_handlers(
         use_case, compare_use_case, similar_use_case, repository, graph_repository,
-        evolution_repository, monitoring_repository, workspace_repository, workspace_report_use_case, workspace_changes_use_case, review_claims_use_case, acquire_evidence_use_case, corroborate_claims_use_case, track_claims_use_case, settings.report_output_dir,
+        evolution_repository, monitoring_repository, workspace_repository, workspace_report_use_case, workspace_changes_use_case, review_claims_use_case, acquire_evidence_use_case, corroborate_claims_use_case, track_claims_use_case, contradiction_use_case, settings.report_output_dir,
     )
 
     application = Application.builder().token(settings.telegram_bot_token).build()
@@ -154,6 +172,10 @@ async def run() -> None:
     application.add_handler(CommandHandler("claim_timeline_build", claim_timeline_build_handler))
     application.add_handler(CommandHandler("claim_timeline", claim_timeline_handler))
     application.add_handler(CommandHandler("claim_timeline_report", claim_timeline_report_handler))
+    application.add_handler(CommandHandler("contradictions", contradictions_handler))
+    application.add_handler(CommandHandler("contradiction", contradiction_handler))
+    application.add_handler(CommandHandler("contradiction_resolve", contradiction_resolve_handler))
+    application.add_handler(CommandHandler("contradiction_report", contradiction_report_handler))
     application.add_handler(CommandHandler("evidence_request", evidence_request_handler))
     application.add_handler(CommandHandler("evidence_requests", evidence_requests_handler))
     application.add_handler(CommandHandler("evidence_request_cancel", evidence_request_cancel_handler))

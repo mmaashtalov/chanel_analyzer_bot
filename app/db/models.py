@@ -1,8 +1,20 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 try:
     from pgvector.sqlalchemy import Vector
 except ImportError:  # local test environment without optional DB extension package
@@ -525,6 +537,9 @@ class ClaimIdentityRecord(Base):
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False)
     category: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     canonical_statement: Mapped[str] = mapped_column(Text, nullable=False)
+    canonical_claim_id: Mapped[str | None] = mapped_column(
+        ForeignKey("analytic_claims.id", ondelete="SET NULL"), index=True
+    )
     methodology_version: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
@@ -542,5 +557,74 @@ class ClaimTimelineLinkRecord(Base):
     relation_type: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     rationale_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    event_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ClaimContradictionRecord(Base):
+    """Mutable queue projection for a detected contradiction.
+
+    The audit trail is stored separately in ``ClaimContradictionEventRecord``;
+    this row is only the current state used by triage queries.
+    """
+
+    __tablename__ = "claim_contradictions"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id", "source_claim_id", "target_claim_id",
+            name="uq_claim_contradiction_pair",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    claim_identity_id: Mapped[str] = mapped_column(
+        ForeignKey("claim_identities.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    source_claim_id: Mapped[str] = mapped_column(
+        ForeignKey("analytic_claims.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    target_claim_id: Mapped[str] = mapped_column(
+        ForeignKey("analytic_claims.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    severity: Mapped[str] = mapped_column(String(16), index=True, nullable=False, default="medium")
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    rationale_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(32), index=True, nullable=False, default="open")
+    resolution_action: Mapped[str | None] = mapped_column(String(32), index=True)
+    selected_claim_id: Mapped[str | None] = mapped_column(
+        ForeignKey("analytic_claims.id", ondelete="SET NULL"), index=True
+    )
+    resolution_comment: Mapped[str | None] = mapped_column(Text)
+    resolved_by: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    active: Mapped[bool] = mapped_column(Boolean, index=True, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+
+class ClaimContradictionEventRecord(Base):
+    """Append-only analyst decision event for a contradiction."""
+
+    __tablename__ = "claim_contradiction_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    contradiction_id: Mapped[str] = mapped_column(
+        ForeignKey("claim_contradictions.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    telegram_user_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)
+    previous_status: Mapped[str | None] = mapped_column(String(32))
+    action: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    new_status: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    selected_claim_id: Mapped[str | None] = mapped_column(
+        ForeignKey("analytic_claims.id", ondelete="SET NULL"), index=True
+    )
+    comment: Mapped[str | None] = mapped_column(Text)
+    details_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    previous_event_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     event_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

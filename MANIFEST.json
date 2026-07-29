@@ -7,9 +7,9 @@
     "size": 731210,
     "sha256": "da6794ad2df8a7ae26fc9fbd82207138b319e1f43fa974e1814bbaea07ab24ae"
   },
-  "tests": "100/100",
-  "test_count": 100,
-  "file_count": 214,
+  "tests": "105/105",
+  "test_count": 105,
+  "file_count": 221,
   "generated_by": "scripts/generate_manifest.py",
   "files": [
     {
@@ -39,8 +39,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 8731,
-      "sha256": "5d5729fc090167bf1c3d0541293d237d89e5ebcbf9dfc67807b284c8cc8ee681"
+      "size": 9861,
+      "sha256": "f0f2199d2661610ec74f12929d42d09e0a0d4bf20246bebd0ba4230187e29ea3"
     },
     {
       "path": "Dockerfile",
@@ -153,6 +153,11 @@
       "sha256": "24f705ae5c1beb27f43a4d2005761737cbc306858401539ef99a17babc990839"
     },
     {
+      "path": "alembic/versions/0017_contradiction_triage.py",
+      "size": 4986,
+      "sha256": "c47e45112fe453df49bdd99305272d916121a1cf5477b683e9efc843b0026010"
+    },
+    {
       "path": "alembic.ini",
       "size": 598,
       "sha256": "3a178e8ab4ec832a432bc771c83f548b75db278b32421262f980f28a2f8c894a"
@@ -184,8 +189,8 @@
     },
     {
       "path": "app/application/acquire_evidence.py",
-      "size": 3704,
-      "sha256": "f744361ec3a1d10da9e670c65f8538d3d761203f40228d5c8b000c5e21384b6e"
+      "size": 4211,
+      "sha256": "cf1a6790cd8e03ee5853ccb5466fbe8806c9a92ed27e88309139b4d60df69cd0"
     },
     {
       "path": "app/application/analyze_channel.py",
@@ -223,6 +228,11 @@
       "sha256": "d98628a9a1d26afe8fe3d766f867244d0216a7fcebf49b26b32fd5bb41c8812d"
     },
     {
+      "path": "app/application/triage_contradictions.py",
+      "size": 4183,
+      "sha256": "0f58a071f50630b52f2a671201a877d25142babec0d9b7fd964702ff208207d4"
+    },
+    {
       "path": "app/application/workspace_changes.py",
       "size": 2685,
       "sha256": "03010ffba04406135ea0f7c6a8567af8734007ba1405ab6963e4276fa9fce732"
@@ -239,8 +249,8 @@
     },
     {
       "path": "app/bot/handlers.py",
-      "size": 46072,
-      "sha256": "a9febc5524f71e82b2e8e4dbb31bf8622241fcbf2b6ea72af768312b3ac7bd97"
+      "size": 52610,
+      "sha256": "bd5a8ff79072463ae7939b9aab6aaaca72142f1d39e4b1191d1272ef926b09d2"
     },
     {
       "path": "app/collection/__init__.py",
@@ -293,6 +303,11 @@
       "sha256": "d80036df6dfd2815a45f8c1c535d66d722dacbff230fc37928cf9b0aa63b727a"
     },
     {
+      "path": "app/db/contradiction_repository.py",
+      "size": 16295,
+      "sha256": "fbcc0085ff3ef9de92a9373904508067cc2579c0c5620cb23c5088b5b28c6107"
+    },
+    {
       "path": "app/db/corroboration_repository.py",
       "size": 4946,
       "sha256": "95f6157af57ff436dc1b9617ee90853b789b05e21041a2c0d622a3c2f053f862"
@@ -314,8 +329,8 @@
     },
     {
       "path": "app/db/models.py",
-      "size": 33783,
-      "sha256": "2a02d855e44b517e3c58a6af85892ff74e67ef0231af199858494589bc93debe"
+      "size": 37516,
+      "sha256": "9b77aa85c1c8b898af6e97c0e1f2925cfc5c3ec22cf22198421f67110dd10444"
     },
     {
       "path": "app/db/repositories.py",
@@ -334,8 +349,8 @@
     },
     {
       "path": "app/db/temporal_claim_repository.py",
-      "size": 9966,
-      "sha256": "b2b4510622f092fc1e56a0bad8c9455d7acf7f5b38f157fc3632efca0c6aad53"
+      "size": 19323,
+      "sha256": "4bf6290b610692ec28b6a5b8f4bd1e7452715cea5e9cdbd200b29f616175e51a"
     },
     {
       "path": "app/db/workspace_evolution_repository.py",
@@ -434,8 +449,13 @@
     },
     {
       "path": "app/evidence/acquisition.py",
-      "size": 2164,
-      "sha256": "4f6a8bba89e9464340f96a13eac4a8e05a8786392d2be85a6dbe9e1382763062"
+      "size": 3670,
+      "sha256": "f2701d81e7808ad797dc9cd52a1106d6d86599066eb9fdb5834d65db3e6c705a"
+    },
+    {
+      "path": "app/evidence/contradictions.py",
+      "size": 5462,
+      "sha256": "3843f959c9e43c2b0fe24c7fded9c33db6d3dbe1222cc81831e1dd8d279f767c"
     },
     {
       "path": "app/evidence/corroboration.py",
@@ -509,8 +529,8 @@
     },
     {
       "path": "app/main.py",
-      "size": 11788,
-      "sha256": "72e0396899a70a726446b16c792f67962c645709ecaf99b927b2b03b87d3184a"
+      "size": 12715,
+      "sha256": "00929f09be933ff4f0ddb5ac6a7a54e1b5e9d2524644954de90246d66c45fb95"
     },
     {
       "path": "app/monitoring/__init__.py",
@@ -591,6 +611,11 @@
       "path": "app/reports/comparison_pdf.py",
       "size": 3195,
       "sha256": "8cb2d0cf73d14b279a0440ea963ba4b097f5205b481648b9767b73c71104c219"
+    },
+    {
+      "path": "app/reports/contradiction_pdf.py",
+      "size": 3095,
+      "sha256": "413cef429ab219926fcee0b0666965f3dbf120147aaf421da75f3b430becb73b"
     },
     {
       "path": "app/reports/network_pdf.py",
@@ -828,6 +853,11 @@
       "sha256": "eed9f23552e8e4b1cb162fc218b5680f2da07fceeb83d2cdf5c405fec386b0d5"
     },
     {
+      "path": "docs/SPRINT21_REPORT.md",
+      "size": 3306,
+      "sha256": "784aaec61426c13430f7284a783cc6155dba88c4bec4eabce620ba1e898f9a65"
+    },
+    {
       "path": "docs/SPRINT_17_REPORT.md",
       "size": 1339,
       "sha256": "5021dc0be590370a22e029440455158830bbc47c4758345d7ddf37b0ea506dda"
@@ -946,6 +976,11 @@
       "path": "tests/test_content_dna.py",
       "size": 829,
       "sha256": "a3617a7db71168b70e7cfecb5cd33c91b043822549c8d60b388f397464c0f15a"
+    },
+    {
+      "path": "tests/test_contradictions.py",
+      "size": 2904,
+      "sha256": "a365ec153050b80829f72df079fdeaf75f0438c99753854b4f376a8172560166"
     },
     {
       "path": "tests/test_corroboration.py",

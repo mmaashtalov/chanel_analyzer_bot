@@ -61,3 +61,38 @@ def build_request_plan(
         sources=tuple(sources),
         priority=priority,
     )
+
+
+def build_contradiction_request_plan(
+    workspace: Workspace,
+    contradiction: dict[str, Any],
+) -> EvidenceRequestPlan:
+    """Build an evidence request for a contradiction even without a prior gap."""
+
+    claim_id = str(contradiction.get("target_claim_id") or contradiction.get("source_claim_id"))
+    statement = str(
+        contradiction.get("target_statement")
+        or contradiction.get("source_statement")
+        or "contradiction"
+    )
+    assessment = str(
+        contradiction.get("target_assessment")
+        or contradiction.get("source_assessment")
+        or ""
+    )
+    words = re.findall(r"[\w.-]{4,}", f"{statement} {assessment}".casefold())
+    stop = {"который", "которые", "количество", "увеличилось", "выявлены", "появились", "информационное"}
+    terms = tuple(dict.fromkeys(word for word in words if word not in stop))[:12]
+    sources: list[SourcePlanItem] = []
+    for item in workspace.items:
+        if item.item_type is WorkspaceItemType.CHANNEL:
+            sources.append(SourcePlanItem("telegram", item.normalized_value, "contradiction triage"))
+        elif item.item_type is WorkspaceItemType.RSS:
+            sources.append(SourcePlanItem("rss", item.normalized_value, "contradiction triage"))
+    return EvidenceRequestPlan(
+        claim_id=claim_id,
+        gap_codes=("contradiction_unresolved",),
+        query_terms=terms,
+        sources=tuple(sources),
+        priority="high",
+    )

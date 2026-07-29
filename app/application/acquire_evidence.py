@@ -3,7 +3,11 @@ from __future__ import annotations
 from app.application.review_claims import ReviewClaimsUseCase
 from app.db.evidence_request_repository import EvidenceRequestRepository
 from app.db.workspace_repository import WorkspaceRepository
-from app.evidence.acquisition import EvidenceRequestStatus, build_request_plan
+from app.evidence.acquisition import (
+    EvidenceRequestStatus,
+    build_contradiction_request_plan,
+    build_request_plan,
+)
 
 
 class ExternalRunner:
@@ -21,11 +25,23 @@ class AcquireEvidenceUseCase:
     async def create_for_claim(self, user_id: int, workspace_id: str, claim_id: str) -> dict:
         workspace = await self._workspaces.get(user_id, workspace_id)
         if workspace is None: raise LookupError("Workspace не найден")
-        bundle, claims = await self._review.list_claims(user_id, workspace_id)
+        _bundle, claims = await self._review.list_claims(user_id, workspace_id)
         claim = next((item for item in claims if item["claim_id"] == claim_id), None)
         if claim is None: raise LookupError("Claim не найден в последнем bundle Workspace")
         _, gaps = await self._review.gaps(user_id, workspace_id)
         plan = build_request_plan(workspace, claim, gaps)
+        return await self._requests.create(workspace_id, user_id, plan)
+
+    async def create_for_contradiction(
+        self,
+        user_id: int,
+        workspace_id: str,
+        contradiction: dict,
+    ) -> dict:
+        workspace = await self._workspaces.get(user_id, workspace_id)
+        if workspace is None:
+            raise LookupError("Workspace не найден")
+        plan = build_contradiction_request_plan(workspace, contradiction)
         return await self._requests.create(workspace_id, user_id, plan)
 
     async def list(self, user_id: int, workspace_id: str | None = None) -> list[dict]:

@@ -8,19 +8,26 @@ from app.application.analyze_channel import AnalyzeChannelUseCase
 from app.application.compare_channels import CompareChannelsUseCase
 from app.application.find_similar_profiles import FindSimilarProfilesUseCase
 from app.collection.base import ProviderError
-from app.db.repositories import EvolutionRepository, GraphRepository, JobRepository, MonitoringRepository
+from app.db.repositories import (
+    EvolutionRepository,
+    GraphRepository,
+    JobRepository,
+    MonitoringRepository,
+)
 from app.db.workspace_repository import WorkspaceRepository
 from app.domain.models import ChannelRef
-from app.reports.network_pdf import build_network_pdf
-from app.workspaces.models import WorkspaceItemType
+from app.evidence.contradictions import ContradictionResolutionAction
 from app.evidence.review import ClaimReviewStatus
-from app.reports.verification_pdf import build_verification_exports
 from app.reports.claim_timeline_pdf import build_claim_timeline_exports
+from app.reports.contradiction_pdf import build_contradiction_exports
+from app.reports.network_pdf import build_network_pdf
+from app.reports.verification_pdf import build_verification_exports
+from app.workspaces.models import WorkspaceItemType
 
 logger = structlog.get_logger()
 
 
-def _number(value: float | int | None) -> str:
+def _number(value: float | None) -> str:
     if value is None:
         return "н/д"
     if isinstance(value, float):
@@ -43,6 +50,7 @@ def build_handlers(
     acquire_evidence_use_case,
     corroborate_claims_use_case,
     track_claims_use_case,
+    contradiction_use_case,
     report_output_dir,
 ):
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -79,6 +87,10 @@ def build_handlers(
                 "/claim_timeline_build ID — построить timeline Workspace\n"
                 "/claim_timeline CLAIM_ID — история утверждения\n"
                 "/claim_timeline_report ID — PDF/JSON timeline\n"
+                "/contradictions ID [open|all] — очередь противоречий\n"
+                "/contradiction ID — карточка contradiction и журнал\n"
+                "/contradiction_resolve ID confirm|compatible|newer|evidence [claim] [комментарий]\n"
+                "/contradiction_report ID — PDF/JSON dossier\n"
                 "/status — состояние последнего задания\n\n"
                 "Система анализирует только каналы, явно указанные пользователем."
             )
@@ -732,6 +744,119 @@ def build_handlers(
         except LookupError as exc:
             await message.reply_text(str(exc))
 
+    async def contradictions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message, user = update.effective_message, update.effective_user
+        if message is None or user is None:
+            return
+        if not context.args:
+            await message.reply_text("Формат: /contradictions WORKSPACE_ID [open|confirmed|compatible|all]")
+            return
+        status_filter = context.args[1] if len(context.args) > 1 else "open"
+        try:
+            records = await contradiction_use_case.queue(user.id, context.args[0], status_filter)
+            if not records:
+                await message.reply_text("В выбранной очереди противоречий нет.")
+                return
+            lines = [f"Contradictions: {len(records)} · filter {status_filter}"]
+            for item in records:
+                lines.append(
+                    f"\n{item['contradiction_id']} · {item['severity']} · "
+                    f"confidence {item['confidence']:.0%} · {item['status']}"
+                    f"\nS: {str(item['source_statement'] or '')[:220]}"
+                    f"\nT: {str(item['target_statement'] or '')[:220]}"
+                )
+            await message.reply_text("\n".join(lines))
+        except (LookupError, PermissionError, ValueError) as exc:
+            await message.reply_text(str(exc))
+
+    async def contradiction(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message, user = update.effective_message, update.effective_user
+        if message is None or user is None:
+            return
+        if not context.args:
+            await message.reply_text("Формат: /contradiction CONTRADICTION_ID")
+            return
+        try:
+            item = await contradiction_use_case.detail(user.id, context.args[0])
+            lines = [
+                f"Contradiction {item['contradiction_id']}",
+                (
+                    f"Статус: {item['status']} · severity {item['severity']} · "
+                    f"confidence {item['confidence']:.0%}"
+                ),
+                f"Source: {item['source_claim_id']}\n{item['source_statement']}",
+                f"Target: {item['target_claim_id']}\n{item['target_statement']}",
+                f"Rationale: {'; '.join(item.get('rationale') or [])}",
+                f"Решение: {item.get('resolution_action') or 'не принято'}",
+            ]
+            if item.get("history"):
+                lines.append("\nЖурнал:")
+                for event in item["history"][-10:]:
+                    lines.append(
+                        f"{event['created_at']} · {event['action']} · "
+                        f"{event['previous_status'] or 'new'} → {event['new_status']}"
+                        f"\nHash: {event['event_hash'][:16]}…"
+                    )
+            await message.reply_text("\n".join(lines))
+        except (LookupError, PermissionError) as exc:
+            await message.reply_text(str(exc))
+
+    async def contradiction_resolve(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message, user = update.effective_message, update.effective_user
+        if message is None or user is None:
+            return
+        if len(context.args) < 2:
+            await message.reply_text(
+                "Формат: /contradiction_resolve ID confirm|compatible|newer|evidence [CLAIM_ID] [комментарий]"
+            )
+            return
+        try:
+            action = ContradictionResolutionAction.parse(context.args[1])
+            selected_claim_id = None
+            comment_start = 2
+            if action is ContradictionResolutionAction.ACCEPT_NEWER:
+                if len(context.args) < 3:
+                    await message.reply_text("Для action newer укажите CLAIM_ID нового утверждения.")
+                    return
+                selected_claim_id = context.args[2]
+                comment_start = 3
+            comment = " ".join(context.args[comment_start:]).strip() or None
+            result = await contradiction_use_case.resolve(
+                user.id,
+                context.args[0],
+                action,
+                selected_claim_id,
+                comment,
+            )
+            response = (
+                f"Contradiction обновлён: {result['status']}\n"
+                f"Action: {result['resolution_action']}\n"
+                f"Event hash: {result.get('last_event_hash', '')}"
+            )
+            if result.get("evidence_request_id"):
+                response += f"\nEvidence request: {result['evidence_request_id']}"
+            await message.reply_text(response)
+        except (LookupError, PermissionError, ValueError) as exc:
+            await message.reply_text(str(exc))
+
+    async def contradiction_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message, user = update.effective_message, update.effective_user
+        if message is None or user is None:
+            return
+        if not context.args:
+            await message.reply_text("Формат: /contradiction_report WORKSPACE_ID [all|open]")
+            return
+        try:
+            status_filter = context.args[1] if len(context.args) > 1 else "all"
+            report = await contradiction_use_case.report(user.id, context.args[0], status_filter)
+            json_path, pdf_path = build_contradiction_exports(report, report_output_dir)
+            with pdf_path.open("rb") as file:
+                await message.reply_document(file, filename=pdf_path.name, caption="Contradiction Dossier")
+            with json_path.open("rb") as file:
+                await message.reply_document(file, filename=json_path.name, caption="Machine-readable contradiction dossier")
+        except (LookupError, PermissionError, ValueError) as exc:
+            await message.reply_text(str(exc))
+
     async def evidence_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message, user = update.effective_message, update.effective_user
         if message is None or user is None:
@@ -856,4 +981,5 @@ def build_handlers(
         start, analyze, compare, similar, network, entity, domain, timeline,
         changes, history, watch, unwatch, watches, alerts, digest, workspace_create,
         workspaces, workspace_show, workspace_add, workspace_remove, workspace_delete, workspace_report, workspace_changes, claims, claim_review, claim_history, evidence_gaps, verification_report, corroboration, claim_timeline_build, claim_timeline, claim_timeline_report, evidence_request, evidence_requests, evidence_request_cancel, evidence_request_retry, evidence_request_run, evidence_request_history, status,
+        contradictions, contradiction, contradiction_resolve, contradiction_report,
     )
